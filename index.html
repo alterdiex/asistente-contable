@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Asistente Contable Personal - Diego León</title>
+<!-- Librería SheetJS para leer y exportar archivos Excel (.xlsx) directamente en el navegador -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#f6f5f1;--card:#ffffff;--tx:#1d1d1b;--mu:#6b6a63;--bd:#e3e1d9;
+  --ac:#0f6e56;--ac2:#e1f5ee;--rd:#b3261e;--rd2:#fcebea;--am:#8a5a00;--am2:#fff3d6;--gr:#2e7d32;
+  --bl:#1e3a8a;--bl2:#dbeafe;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;--bg:#171716;--card:#222220;--tx:#efeee9;--mu:#a09f97;--bd:#3a3935;
+    --ac:#5dcaa5;--ac2:#10382d;--rd:#f09595;--rd2:#4a1d1b;--am:#f0c060;--am2:#40300c;--gr:#8bd18f;
+    --bl:#93c5fd;--bl2:#1e293b;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:16px}
+h1{font-size:21px;margin:2px 0}
+h2{font-size:15px;margin:0}
+small,.mu{color:var(--mu)}
+.sec-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,0.03)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px}
+.kpi b{display:block;font-size:19px;margin-top:2px}
+.row{display:grid;grid-template-columns:1fr auto auto auto auto auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--bd)}
+.row:first-of-type{border-top:0}
+input,select,textarea,button{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:7px 9px}
+input[type=number]{width:115px}
+input[type=date]{width:138px}
+textarea{width:100%;min-height:68px;resize:vertical}
+button{cursor:pointer;transition:opacity .15s,transform .05s}
+button:active{transform:scale(0.98)}
+button.p{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:500}
+button.bl{background:var(--bl);color:#fff;border-color:var(--bl);font-weight:500}
+button.g{background:none;border:0;color:var(--mu);padding:4px 8px}
+button.s{font-size:12.5px;padding:5px 10px}
+.btn-file{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;padding:5px 10px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);cursor:pointer;font-weight:500}
+.btn-file.primary{background:var(--ac2);color:var(--ac);border-color:var(--ac)}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;white-space:nowrap;display:inline-block}
+.v{background:var(--rd2);color:var(--rd)}
+.h{background:var(--am2);color:var(--am)}
+.o{background:var(--ac2);color:var(--ac)}
+.b{background:var(--bl2);color:var(--bl)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{padding:7px 8px;text-align:right;border-top:1px solid var(--bd)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mu);font-weight:600;border:0;font-size:13px}
+.neg{color:var(--rd)}.pos{color:var(--gr)}
+.sal{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.sal label{font-size:12px;color:var(--mu);display:block;margin-bottom:2px}
+.deu{padding:10px 0;border-top:1px solid var(--bd)}
+.deu:first-of-type{border-top:0}
+.deu .f{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.banner{padding:9px 12px;border-radius:8px;font-size:13.5px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.banner.ok{background:var(--ac2);color:var(--ac);border:1px solid var(--ac)}
+.banner.warn{background:var(--am2);color:var(--am);border:1px solid var(--am)}
+details.cfg{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 14px;margin-bottom:14px}
+details.cfg summary{cursor:pointer;font-weight:600;font-size:14px;outline:none}
+@media(max-width:680px){
+  .row{grid-template-columns:1fr 1fr}
+  .row>:first-child{grid-column:1/-1}
+  input[type=number],input[type=date]{width:100%}
+}
+</style>
+</head>
+<body>
+<main>
+  <!-- ENCABEZADO Y BARRA DE EXCEL / RESPALDO -->
+  <div class="sec-head" style="margin-bottom:6px">
+    <div>
+      <h1>Asistente Contable Personal</h1>
+      <small id="hoy"></small> · <small id="st" class="pos" style="font-weight:500"></small>
+    </div>
+    <div class="tools" style="margin:0">
+      <label class="btn-file primary" title="Selecciona tu archivo Asistente_Contable_Personal.xlsx para leer todas sus hojas">
+        📥 Cargar Excel (.xlsx)
+        <input type="file" id="xlsxIn" accept=".xlsx,.xls" hidden>
+      </label>
+      <button class="s p" id="xlsxOut" title="Descarga tus datos actualizados en un nuevo archivo Excel (.xlsx)">📤 Exportar a Excel (.xlsx)</button>
+      <button class="s" id="btnRecalc" title="Guarda todos los cambios hechos en las tablas y recalcula proyecciones">🔄 Guardar y Recalcular</button>
+    </div>
+  </div>
+
+  <!-- SELECTOR DE HOJA DE EXCEL Y MODO DE DATOS -->
+  <div class="card" style="padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <small><b>Hoja / Mes activo:</b></small>
+      <select id="selMes" class="s" style="padding:4px 8px">
+        <option value="Octubre">Octubre 2026 (Actual)</option>
+        <option value="Septiembre">Septiembre 2026</option>
+        <option value="Agosto">Agosto 2026</option>
+        <option value="Julio">Julio 2026</option>
+        <option value="Presupuesto Prom">Presupuesto Promedio</option>
+      </select>
+      <label style="font-size:12.5px;display:inline-flex;align-items:center;gap:4px;cursor:pointer">
+        <input type="checkbox" id="chkEstimados" checked> Completar celdas en blanco con promedios para Proyección
+      </label>
+    </div>
+    <div class="tools" style="margin:0">
+      <button class="s" id="btnRestaurarBase">Restaurar datos base del Excel</button>
+      <button class="s" id="togCripto">Incluir/Ocultar Cripto (Lemon, Binance, ARQ)</button>
+    </div>
+  </div>
+
+  <!-- CONFIGURACIÓN DE CONEXIÓN A LA API DE GEMINI -->
+  <details class="cfg" id="geminiCfg">
+    <summary>✨ Conexión con Google Gemini API (Para cualquier navegador y lectura de extractos PDF/Imagen) <span id="apiBadge" class="tag h" style="margin-left:6px">Modo Local Activo</span></summary>
+    <div style="margin-top:10px;font-size:13.5px">
+      <p style="margin:0 0 8px">Pega tu API Key de <b>Google AI Studio</b> (<code>AIza...</code>) para que <b>Gemini 2.5 Flash</b> interprete instrucciones complejas y lea fotos o PDFs de tus extractos bancarios desde cualquier navegador. Se guarda únicamente en este navegador.</p>
+      <div class="tools">
+        <input type="password" id="apiKeyInput" placeholder="AIzaSy..." style="flex:1;min-width:240px">
+        <select id="geminiModel" style="width:auto">
+          <option value="gemini-2.5-flash">gemini-2.5-flash (Recomendado)</option>
+          <option value="gemini-2.5-pro">gemini-2.5-pro (Avanzado)</option>
+        </select>
+        <button class="p s" id="btnSaveKey">Guardar API Key</button>
+        <button class="s" id="btnClearKey">Borrar Key</button>
+      </div>
+    </div>
+  </details>
+
+  <!-- NOTIFICACIÓN DE ESTADO -->
+  <div id="notif" class="banner ok" style="display:none"></div>
+
+  <!-- KPIs PRINCIPALES -->
+  <div class="kpis" id="kpis"></div>
+
+  <!-- LENGUAJE NATURAL Y ADJUNTOS -->
+  <div class="card">
+    <div class="sec-head">
+      <h2>Añadir o actualizar con lenguaje natural (Gemini AI / Motor Local)</h2>
+      <small>Soporta múltiples líneas y archivos de extractos</small>
+    </div>
+    <textarea id="q" placeholder="Ejemplos que puedes escribir aquí:&#10;• Añadir ingreso por pago de arriendo Manuel $410.000&#10;• Añadir deuda de tarjeta NU por avance de $600.000 a 1 cuota, EA 30%, cuota de manejo $20.000&#10;• Simular compra Boletas Festival Cordillera por $450.000 a 3 cuotas EA 28%&#10;• Ya pagué el agua / Recibí deuda Manuel / Saldo Nequi $85.000"></textarea>
+    <div class="tools">
+      <button class="p" id="go">⚡ Procesar / Actualizar Todo</button>
+      <label class="btn-file">
+        📎 Adjuntar extracto (Imagen o PDF)
+        <input type="file" id="fi" accept="image/*,application/pdf" multiple hidden>
+      </label>
+      <span id="fileCount" class="mu" style="font-size:12.5px"></span>
+      <span id="msg" style="font-size:13px;font-weight:500"></span>
+    </div>
+  </div>
+
+  <!-- PENDIENTES POR PAGAR -->
+  <div class="card">
+    <div class="sec-head">
+      <h2>Pendientes por pagar (<span id="cntPen">0</span>)</h2>
+      <div class="tools" style="margin:0">
+        <button class="s" id="addGasBtn">+ Añadir gasto manual</button>
+        <button class="s" id="verPagadosBtn">Mostrar/Ocultar ya pagados</button>
+      </div>
+    </div>
+    <div id="pen"></div>
+    <div id="pagadosBox" style="display:none;margin-top:12px;padding-top:10px;border-top:1px dashed var(--bd)">
+      <small><b>Gastos ya pagados en este periodo:</b></small>
+      <div id="gasPagados"></div>
+    </div>
+  </div>
+
+  <!-- INGRESOS -->
+  <div class="card">
+    <div class="sec-head">
+      <h2>Ingresos del periodo (<span id="cntIng">0</span>)</h2>
+      <button class="s" id="addIngBtn">+ Añadir ingreso manual</button>
+    </div>
+    <div id="ing"></div>
+  </div>
+
+  <!-- DEUDAS Y TARJETAS -->
+  <div class="card">
+    <div class="sec-head">
+      <h2>Deudas y tarjetas de crédito (<span id="cntDeu">0</span>)</h2>
+      <button class="s" id="addDeuBtn">+ Añadir tarjeta / deuda</button>
+    </div>
+    <div id="deu"></div>
+  </div>
+
+  <!-- NUEVO MÓDULO: SIMULADOR DE COMPRAS Y METAS -->
+  <div class="card" style="border-left:4px solid var(--ac)">
+    <div class="sec-head">
+      <div>
+        <h2>🎯 Simulador de Compras, Proyectos y Metas de Ahorro</h2>
+        <small>Evalúa cómo impacta una compra o meta en tu excedente mensual y en tu proyección a 6 meses antes de gastar.</small>
+      </div>
+      <button class="s p" id="addSimBtn">+ Nueva simulación / meta</button>
+    </div>
+    <div id="simResumen" style="margin:8px 0 10px"></div>
+    <div id="simList"></div>
+  </div>
+
+  <!-- PROYECCIÓN A 6 MESES -->
+  <div class="card">
+    <div class="sec-head">
+      <h2>Proyección de Flujo de Caja a 6 Meses</h2>
+      <span class="tag o" id="simTagProy">Incluye simulaciones activas</span>
+    </div>
+    <div class="wrap" id="pry"></div>
+    <small style="display:block;margin-top:8px">Calculado tomando tu saldo actual más los ingresos/gastos pendientes de este mes y proyectando los siguientes 5 meses con los ítems recurrentes, las cuotas restantes de tus tarjetas y los ítems activos en el Simulador.</small>
+  </div>
+
+  <!-- SALDOS ACTUALES -->
+  <div class="card">
+    <div class="sec-head">
+      <h2>Saldos actuales por cuenta / plataforma (Hoja "Actual")</h2>
+      <button class="s" id="addCuentaBtn">+ Añadir cuenta</button>
+    </div>
+    <div class="sal" id="sal"></div>
+    <div class="tools" style="margin-top:12px">
+      <button id="ex">📄 Descargar respaldo (JSON)</button>
+      <label class="btn-file">📂 Importar respaldo (JSON) <input type="file" id="imp" accept=".json" hidden></label>
+    </div>
+  </div>
+
+  <!-- VISOR DE BASE DE DATOS LOCAL -->
+  <details class="cfg">
+    <summary>🗄️ ¿Dónde están mis datos? Visor de Almacenamiento Local (<code>localStorage</code>)</summary>
+    <div style="margin-top:10px;font-size:13px">
+      <p style="margin:0 0 8px">Tus datos están guardados localmente en este navegador bajo la clave <code>fin_asistente_v2</code>. Cada vez que modificas un número, agregas algo con lenguaje natural o cargas tu Excel, este registro se actualiza al instante. Puedes descargarlo como <b>Excel (.xlsx)</b> con el botón superior derecho.</p>
+      <pre id="jsonViewer" style="background:var(--bg);padding:10px;border-radius:8px;border:1px solid var(--bd);max-height:220px;overflow:auto;font-size:11.5px;margin:0"></pre>
+    </div>
+  </details>
+</main>
+
+<script>
+const $=s=>document.querySelector(s),E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const TODAY=iso(new Date()),P=s=>{const[a,b,c]=String(s||TODAY).slice(0,10).split('-').map(Number);return new Date(a||2026,(b||1)-1,c||1)};
+const addM=(s,n)=>{const d=P(s),y=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+n);d.setDate(Math.min(y,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));return iso(d)};
+const dd=s=>Math.round((P(s)-P(TODAY))/864e5),MES=s=>P(s+'-01').toLocaleDateString('es-CO',{month:'short',year:'2-digit'});
+const fm=n=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Math.round(n||0));
+
+const STORAGE_KEY = 'fin_asistente_v2';
+let showPagados = false;
+let uploadedWorkbook = null;
+
+// Base de datos de todas las hojas de Asistente_Contable_Personal.xlsx precargada
+const EXCEL_SHEETS = {
+  "Octubre": {
+    ing: [
+      {d:"Arriendo Manuel Castillo (Mitad pendiente sep.)", m:200000, est:200000, f:"2026-09-30", p:1, r:0},
+      {d:"Salario Quincenal - Pago 1", m:750000, est:750000, f:"2026-10-02", p:1, r:1},
+      {d:"Planilla PILA Yadira (Pensión)", m:280200, est:280200, f:"2026-10-02", p:1, r:1},
+      {d:"Deuda Manuel", m:75000, est:75000, f:"2026-10-15", p:0, r:0},
+      {d:"Arriendo Manuel Castillo", m:0, est:400000, f:"2026-10-15", p:0, r:1},
+      {d:"Salario Quincenal - Pago 2", m:0, est:750000, f:"2026-10-16", p:0, r:1},
+      {d:"Planilla PILA Diego (Salud, Pensión y Caja)", m:0, est:536400, f:"2026-10-16", p:0, r:1},
+      {d:"Venta Suscripciones Telegram", m:0, est:150000, f:"2026-10-30", p:0, r:1},
+      {d:"Venta Pantallas Streaming (Netflix, Disney...)", m:0, est:50000, f:"2026-10-30", p:0, r:1}
+    ],
+    gas: [
+      {d:"Planilla PILA Yadira (Pensión)", m:280200, est:280200, f:"2026-10-02", p:1, r:1},
+      {d:"Suscripción de True Caller Family", m:7900, est:7900, f:"2026-10-04", p:0, r:1},
+      {d:"Servicio de Internet Claro Hogar", m:62300, est:62300, f:"2026-10-05", p:0, r:1},
+      {d:"Suscripción Telegram Premium", m:18500, est:18500, f:"2026-10-06", p:0, r:1},
+      {d:"Suscripción Netflix Familiar", m:18900, est:18900, f:"2026-10-08", p:0, r:1},
+      {d:"Servicio Gas - VANTI", m:30000, est:30000, f:"2026-10-13", p:0, r:1},
+      {d:"Suscripción Google One", m:20000, est:20000, f:"2026-10-13", p:0, r:1},
+      {d:"Servicio Energía - ENEL", m:50000, est:50000, f:"2026-10-15", p:0, r:1},
+      {d:"Planilla PILA Diego (Salud, Pensión y Caja)", m:0, est:536400, f:"2026-10-16", p:0, r:1},
+      {d:"Repetidores Claro (Cuota Fija)", m:0, est:10900, f:"2026-10-17", p:0, r:1},
+      {d:"Plan de Celular Claro Móvil", m:0, est:43500, f:"2026-10-18", p:0, r:1},
+      {d:"Autocompra pantallas (Disney, MAX...)", m:0, est:10000, f:"2026-10-25", p:0, r:1},
+      {d:"Servicio Agua - ALP", m:75309, est:75309, f:"2026-10-30", p:0, r:1}
+    ]
+  },
+  "Septiembre": {
+    ing: [
+      {d:"Pago Crunchyroll Manuel + Préstamo", m:516500, est:516500, f:"2026-08-31", p:1, r:0},
+      {d:"Salario Quincenal - Pago 1", m:750000, est:750000, f:"2026-09-04", p:1, r:1},
+      {d:"Planilla PILA Diego (Salud, Pensión y Caja)", m:536400, est:536400, f:"2026-09-04", p:1, r:1},
+      {d:"Salario Quincenal - Pago 2", m:750000, est:750000, f:"2026-09-18", p:1, r:1},
+      {d:"Arriendo Manuel Castillo", m:0, est:400000, f:"2026-09-15", p:0, r:1}
+    ],
+    gas: [
+      {d:"Planilla PILA Diego (Salud, Pensión y Caja)", m:536400, est:536400, f:"2026-09-15", p:1, r:1},
+      {d:"Servicio de Internet Claro Hogar", m:55900, est:55900, f:"2026-09-05", p:1, r:1},
+      {d:"Servicio Gas - VANTI", m:15850, est:15850, f:"2026-09-10", p:1, r:1},
+      {d:"Servicio Energía - ENEL", m:54520, est:54520, f:"2026-09-12", p:1, r:1},
+      {d:"Plan de Celular Claro Móvil", m:43500, est:43500, f:"2026-09-16", p:1, r:1},
+      {d:"Repetidores Claro (Cuota Fija)", m:10900, est:10900, f:"2026-09-17", p:1, r:1},
+      {d:"Pago deuda Manuel", m:100000, est:100000, f:"2026-09-07", p:1, r:0},
+      {d:"Tarjeta Crédito NU abono 1", m:96111, est:96111, f:"2026-09-30", p:1, r:0},
+      {d:"Tarjeta Crédito NU abono 2", m:100000, est:100000, f:"2026-09-18", p:1, r:0},
+      {d:"Suscripción Google One", m:20000, est:20000, f:"2026-09-13", p:1, r:1},
+      {d:"Suscripción de True Caller Family", m:7900, est:7900, f:"2026-09-04", p:1, r:1},
+      {d:"Suscripción Telegram Premium", m:18500, est:18500, f:"2026-09-06", p:1, r:1},
+      {d:"Suscripción Netflix Familiar", m:18900, est:18900, f:"2026-09-08", p:1, r:1}
+    ]
+  },
+  "Agosto": {
+    ing: [
+      {d:"Salario Quincenal - Pago 1", m:750000, est:750000, f:"2026-07-26", p:1, r:1},
+      {d:"Apoyo Viaje Lejanías", m:211255, est:211255, f:"2026-08-05", p:1, r:0},
+      {d:"Salario Quincenal - Pago 2", m:754072, est:754072, f:"2026-08-24", p:1, r:1},
+      {d:"Apoyo Planilla PILA Diego", m:534200, est:534200, f:"2026-07-26", p:1, r:1},
+      {d:"Apoyo Planilla PILA Yadira (Jul)", m:280200, est:280200, f:"2026-07-26", p:1, r:1},
+      {d:"Apoyo Planilla PILA Yadira (Ago)", m:280200, est:280200, f:"2026-08-26", p:1, r:1},
+      {d:"Arriendo Manuel Castillo", m:410000, est:410000, f:"2026-08-14", p:1, r:1},
+      {d:"Venta Suscripciones Telegram", m:375000, est:375000, f:"2026-08-28", p:1, r:1}
+    ],
+    gas: [
+      {d:"Planilla PILA (Aportes)", m:534200, est:534200, f:"2026-07-26", p:1, r:1},
+      {d:"Pago planilla obligatoria PILA Yadira (1)", m:280200, est:280200, f:"2026-07-26", p:1, r:1},
+      {d:"Pago planilla obligatoria PILA Yadira (2)", m:280200, est:280200, f:"2026-08-26", p:1, r:1},
+      {d:"Servicio Agua - ALP", m:203365, est:203365, f:"2026-08-24", p:1, r:1},
+      {d:"Servicio de Internet Claro Hogar", m:62300, est:62300, f:"2026-08-06", p:1, r:1},
+      {d:"Servicio Gas - VANTI", m:24850, est:24850, f:"2026-08-08", p:1, r:1},
+      {d:"Servicio Energía - ENEL", m:63040, est:63040, f:"2026-08-08", p:1, r:1},
+      {d:"Plan de Celular Claro Móvil", m:42800, est:42800, f:"2026-08-19", p:1, r:1},
+      {d:"Repetidores Claro (Cuota Fija)", m:10900, est:10900, f:"2026-08-19", p:1, r:1},
+      {d:"Tarjeta Crédito RappiCard 3/6", m:102509, est:102509, f:"2026-07-29", p:1, r:0},
+      {d:"Tarjeta Crédito NU", m:144886, est:144886, f:"2026-08-15", p:1, r:0},
+      {d:"Suscripción Google One", m:20000, est:20000, f:"2026-08-10", p:1, r:1},
+      {d:"Tarjeta Crédito RappiCard 4/6", m:100036, est:100036, f:"2026-08-24", p:1, r:0},
+      {d:"Suscripción de True Caller Family", m:7900, est:7900, f:"2026-08-06", p:1, r:1},
+      {d:"Suscripción Telegram Premium", m:18500, est:18500, f:"2026-08-06", p:1, r:1},
+      {d:"Suscripción Netflix Familiar", m:18900, est:18900, f:"2026-08-08", p:1, r:1},
+      {d:"Cumpleaños Javi", m:85000, est:85000, f:"2026-08-26", p:1, r:0},
+      {d:"Suscripción Crunchyroll Anual", m:142900, est:142900, f:"2026-08-26", p:1, r:0}
+    ]
+  },
+  "Julio": {
+    ing: [
+      {d:"Salario Quincenal - Pago 1", m:760000, est:760000, f:"2026-07-10", p:1, r:1},
+      {d:"Salario Quincenal - Pago 2", m:760000, est:760000, f:"2026-07-26", p:1, r:1},
+      {d:"Apoyo Planilla PILA Diego", m:534200, est:534200, f:"2026-07-10", p:1, r:1},
+      {d:"Apoyo Planilla PILA Yadira", m:280200, est:280200, f:"2026-07-26", p:1, r:1},
+      {d:"Arriendo Manuel Castillo", m:400000, est:400000, f:"2026-07-15", p:1, r:1},
+      {d:"Venta Suscripciones Telegram", m:180000, est:180000, f:"2026-07-30", p:1, r:1},
+      {d:"Venta Pantallas Streaming", m:50000, est:50000, f:"2026-07-30", p:1, r:1},
+      {d:"Reembolso Préstamo Manuel Castillo", m:150000, est:150000, f:"2026-07-15", p:1, r:0}
+    ],
+    gas: [
+      {d:"Planilla PILA (Aportes)", m:534200, est:534200, f:"2026-07-10", p:1, r:1},
+      {d:"Pago planilla obligatoria PILA Yadira", m:280200, est:280200, f:"2026-07-26", p:1, r:1},
+      {d:"Servicio Agua - ALP", m:45224, est:45224, f:"2026-07-02", p:1, r:1},
+      {d:"Servicio de Internet Claro Hogar", m:55900, est:55900, f:"2026-07-02", p:1, r:1},
+      {d:"Servicio Gas - VANTI", m:24170, est:24170, f:"2026-07-02", p:1, r:1},
+      {d:"Servicio Energía - ENEL", m:60760, est:60760, f:"2026-07-10", p:1, r:1},
+      {d:"Plan de Celular Claro Móvil", m:40212, est:40212, f:"2026-07-16", p:1, r:1},
+      {d:"Repetidores Claro (Cuota Fija)", m:10900, est:10900, f:"2026-07-25", p:1, r:1},
+      {d:"Tarjeta Crédito RappiCard", m:102509, est:102509, f:"2026-07-26", p:1, r:0},
+      {d:"Tarjeta Crédito NU", m:104538, est:104538, f:"2026-07-10", p:1, r:0},
+      {d:"Suscripción Netflix Familiar", m:18900, est:18900, f:"2026-07-13", p:1, r:1},
+      {d:"Suscripción Crunchyroll", m:3900, est:3900, f:"2026-07-14", p:1, r:1}
+    ]
+  },
+  "Presupuesto Prom": {
+    ing: [
+      {d:"Salario Quincenal - Pago 1 (Tasa Aprox)", m:760000, est:760000, f:"2026-10-10", p:0, r:1},
+      {d:"Salario Quincenal - Pago 2 (Tasa Aprox)", m:760000, est:760000, f:"2026-10-26", p:0, r:1},
+      {d:"Apoyo Planilla PILA (Financiación)", m:534200, est:534200, f:"2026-10-10", p:0, r:1},
+      {d:"Arriendo Manuel Castillo", m:400000, est:400000, f:"2026-10-15", p:0, r:1},
+      {d:"Venta Suscripciones Telegram", m:150000, est:150000, f:"2026-10-30", p:0, r:1},
+      {d:"Venta Pantallas Streaming", m:50000, est:50000, f:"2026-10-30", p:0, r:1},
+      {d:"Reembolso Préstamo Manuel Castillo", m:150000, est:150000, f:"2026-10-15", p:0, r:0}
+    ],
+    gas: [
+      {d:"Planilla PILA (Aportes)", m:534200, est:534200, f:"2026-10-10", p:0, r:1},
+      {d:"Servicio Agua - ALP", m:100000, est:100000, f:"2026-10-02", p:0, r:1},
+      {d:"Servicio Energía - ENEL", m:60000, est:60000, f:"2026-10-15", p:0, r:1},
+      {d:"Servicio Gas - VANTI", m:25000, est:25000, f:"2026-10-10", p:0, r:1},
+      {d:"Servicio de Internet Claro Hogar", m:55900, est:55900, f:"2026-10-05", p:0, r:1},
+      {d:"Plan de Celular Claro Móvil", m:38900, est:38900, f:"2026-10-15", p:0, r:1},
+      {d:"Repetidores Claro (Cuota Fija)", m:10900, est:10900, f:"2026-10-19", p:0, r:1},
+      {d:"Suscripción Netflix Familiar", m:18900, est:18900, f:"2026-10-08", p:0, r:1},
+      {d:"Suscripción Crunchyroll", m:3900, est:3900, f:"2026-10-14", p:0, r:1},
+      {d:"Autocompra pantallas (Disney, MAX...)", m:10000, est:10000, f:"2026-10-25", p:0, r:1}
+    ]
+  }
+};
+
+function buildInitialState(sheetName = "Octubre", usarEstimados = true, incluirCripto = true) {
+  const sh = EXCEL_SHEETS[sheetName] || EXCEL_SHEETS["Octubre"];
+  const sal = incluirCripto
+    ? {Efectivo:26000, Nequi:6000, Nu:126305, Davivienda:16000, Lemon:100493, Binance:125196, ARQ:95255}
+    : {Efectivo:26000, Nequi:6000, Nu:126305, Davivienda:16000};
+  const ing = sh.ing.map(x => ({d:x.d, m:usarEstimados ? (x.m || x.est) : x.m, f:x.f, p:x.p, r:x.r}));
+  const gas = sh.gas.map(x => ({d:x.d, m:usarEstimados ? (x.m || x.est) : x.m, f:x.f, p:x.p, r:x.r}));
+  const deu = [
+    {n:"Tarjeta Crédito RappiCard", cap:586200, ea:null, k:6, pg:5, cm:0, f:"2026-05-01", q:97700},
+    {n:"Tarjeta Crédito NU", cap:null, ea:null, k:6, pg:0, cm:null, f:"2026-09-18"}
+  ];
+  // Datos de la hoja "Simulador y Proyecciones"
+  const sim = [
+    {n:"Gafas Nuevas (Proyecto 1)", cap:250000, k:1, ea:0, cm:0, metodo:"Nu Bank (Ahorros)", mes:TODAY.slice(0,7), act:1},
+    {n:"Festival Cordillera + Salida Fin de Semana", cap:350000, k:1, ea:0, cm:0, metodo:"Excedente / Ahorro", mes:addM(TODAY,1).slice(0,7), act:0}
+  ];
+  return {sal, ing, gas, deu, sim, sheet: sheetName};
+}
+
+let S = buildInitialState("Octubre", true, true);
+
+// Fórmulas financieras
+const mi=d=>Math.pow(1+(+d.ea||0)/100,1/12)-1;
+const base=d=>d.q!=null?d.q-(+d.cm||0):(+d.cap?(mi(d)?d.cap*mi(d)/(1-Math.pow(1+mi(d),-(+d.k||1))):d.cap/(+d.k||1)):0);
+const cuota=d=>d.q!=null?+d.q:base(d)+(+d.cm||0);
+const saldo=d=>{if(!d.cap)return null;const i=mi(d),b=base(d),n=+d.pg||0;return Math.max(0,i?d.cap*Math.pow(1+i,n)-b*(Math.pow(1+i,n)-1)/i:d.cap-b*n)};
+const simCuota=s=>{const k=Math.max(1,+s.k||1),cap=+s.cap||0,ea=+s.ea||0,cm=+s.cm||0;const i=Math.pow(1+ea/100,1/12)-1;const b=i>0?cap*i/(1-Math.pow(1+i,-k)):cap/k;return b+cm};
+
+function notify(txt, type='ok') {
+  const el = $('#notif');
+  el.className = 'banner ' + type;
+  el.innerHTML = '<span>' + E(txt) + '</span><button class="g" onclick="this.parentElement.style.display=\'none\'">✕</button>';
+  el.style.display = 'flex';
+}
+
+function save(msgTxt) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(S));
+    const timeStr = new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    $('#st').textContent = '✓ Guardado localmente en este navegador (' + timeStr + ')';
+    $('#jsonViewer').textContent = JSON.stringify(S, null, 2);
+    if (msgTxt) notify(msgTxt, 'ok');
+  } catch(e) {
+    $('#st').textContent = 'Atención: No se pudo guardar en localStorage';
+  }
+}
+
+function pend(){
+  const r=[];
+  S.gas.forEach((x,i)=>{if(!x.p)r.push({t:'gas',i,d:x.d,m:x.m,f:x.f})});
+  S.deu.forEach((x,i)=>{if(x.pg<x.k)r.push({t:'deu',i,d:'Cuota '+x.n+' ('+(x.pg+1)+'/'+x.k+')',m:cuota(x),f:addM(x.f,x.pg+1)})});
+  return r.sort((a,b)=>a.f<b.f?-1:1);
+}
+
+function proy(){
+  let s=Object.values(S.sal).reduce((a,b)=>a+(+b||0),0);
+  const o=[],m0=TODAY.slice(0,7);
+  for(let k=0;k<6;k++){
+    const mk=addM(m0+'-01',k).slice(0,7);
+    const sum=(L)=>L.filter(x=>k?(x.r||x.f.slice(0,7)==mk):!x.p).reduce((a,x)=>a+(+x.m||0),0);
+    let dv=0;
+    S.deu.forEach(d=>{
+      for(let j=d.pg+1;j<=d.k;j++){
+        const f=addM(d.f,j).slice(0,7);
+        if(k?f==mk:f<=mk) dv+=cuota(d);
+      }
+    });
+    // Sumar impacto de compras/metas activas en el Simulador
+    let simGasto=0;
+    (S.sim||[]).forEach(sm=>{
+      if(!sm.act) return;
+      const startM = sm.mes || m0;
+      const nCuotas = Math.max(1, +sm.k||1);
+      for(let c=0; c<nCuotas; c++){
+        const mCuota = addM(startM+'-01', c).slice(0,7);
+        if(mCuota === mk) simGasto += simCuota(sm);
+      }
+    });
+    const i=sum(S.ing), g=sum(S.gas)+dv+simGasto;
+    s+=i-g;
+    o.push({mk,i,g,simGasto,n:i-g,s});
+  }
+  return o;
+}
+
+function rel(f){const n=dd(f);return n<0?['v','Vencido hace '+(-n)+' d']:n==0?['h','Vence Hoy']:n<=7?['h','En '+n+' d']:['o','En '+n+' d']}
+
+function render(){
+  $('#hoy').textContent=P(TODAY).toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const pe=pend(),m0=TODAY.slice(0,7);
+  const simMes0 = (S.sim||[]).filter(sm=>sm.act && (sm.mes||m0)===m0).reduce((a,sm)=>a+simCuota(sm),0);
+  const pg=pe.filter(x=>x.f.slice(0,7)<=m0).reduce((a,x)=>a+(+x.m||0),0) + simMes0;
+  const rc=S.ing.filter(x=>!x.p&&x.f.slice(0,7)<=m0).reduce((a,x)=>a+(+x.m||0),0);
+  const pr=proy(),tot=Object.values(S.sal).reduce((a,b)=>a+(+b||0),0);
+
+  $('#kpis').innerHTML=[
+    ['Saldo total actual',fm(tot)],
+    ['Por pagar este mes'+(simMes0?' (incl. Simulador)':''),fm(pg)],
+    ['Por recibir este mes',fm(rc)],
+    ['Saldo estimado fin de mes',fm(pr[0].s)]
+  ].map(a=>'<div class="kpi"><small>'+a[0]+'</small><b>'+a[1]+'</b></div>').join('');
+
+  // Pendientes
+  $('#cntPen').textContent = pe.length;
+  $('#pen').innerHTML=pe.length?pe.map(x=>{
+    const r=rel(x.f);
+    return '<div class="row"><div><b>'+E(x.d)+'</b> <span class="tag '+r[0]+'">'+r[1]+'</span>'+(x.m?'':' <span class="tag h">monto por definir</span>')+'</div>'
+      +'<input type="date" value="'+x.f+'" data-a="f" data-t="'+x.t+'" data-i="'+x.i+'">'
+      +'<input type="number" value="'+Math.round(x.m)+'" data-a="m" data-t="'+x.t+'" data-i="'+x.i+'" '+(x.t=='deu'?'disabled':'')+'>'
+      +'<label style="font-size:12px;color:var(--mu)"><input type="checkbox" '+(x.t=='gas'&&S.gas[x.i].r?'checked':'')+' '+(x.t=='deu'?'disabled':'')+' data-a="r" data-t="gas" data-i="'+x.i+'"> Rec.</label>'
+      +'<button class="p s" data-a="pay" data-t="'+x.t+'" data-i="'+x.i+'">✓ Pagado</button>'
+      +(x.t=='gas'?'<button class="g" data-a="del" data-t="gas" data-i="'+x.i+'">✕</button>':'<span></span>')+'</div>';
+  }).join(''):'<span class="mu">🎉 Sin pagos pendientes para este mes.</span>';
+
+  // Gastos ya pagados
+  const gp = S.gas.map((x,i)=>({x,i})).filter(o=>o.x.p);
+  $('#gasPagados').innerHTML = gp.length ? gp.map(({x,i})=>
+    '<div class="row"><div>'+E(x.d)+' <span class="tag o">Pagado</span></div>'
+    +'<input type="date" value="'+x.f+'" data-a="f" data-t="gas" data-i="'+i+'">'
+    +'<input type="number" value="'+Math.round(x.m)+'" data-a="m" data-t="gas" data-i="'+i+'">'
+    +'<button class="s" data-a="unpay" data-t="gas" data-i="'+i+'">Deshacer</button>'
+    +'<button class="g" data-a="del" data-t="gas" data-i="'+i+'">✕</button></div>'
+  ).join('') : '<small class="mu">No hay gastos marcados como pagados.</small>';
+
+  // Ingresos
+  $('#cntIng').textContent = S.ing.length;
+  const ii=S.ing.map((x,i)=>({x,i})).sort((a,b)=>a.x.f<b.x.f?-1:1);
+  $('#ing').innerHTML=ii.length?ii.map(({x,i})=>
+    '<div class="row"><div><b>'+E(x.d)+'</b>'+(x.r?' <small>· recurrente</small>':'')+' <span class="tag '+(x.p?'o':(dd(x.f)<0?'v':dd(x.f)==0?'h':'b'))+'">'+(x.p?'Recibido':dd(x.f)<0?'Atrasado':dd(x.f)==0?'Hoy':'Por recibir')+'</span>'+(x.m?'':' <span class="tag h">monto por definir</span>')+'</div>'
+    +'<input type="date" value="'+x.f+'" data-a="f" data-t="ing" data-i="'+i+'">'
+    +'<input type="number" value="'+Math.round(x.m)+'" data-a="m" data-t="ing" data-i="'+i+'">'
+    +'<label style="font-size:12px;color:var(--mu)"><input type="checkbox" '+(x.r?'checked':'')+' data-a="r" data-t="ing" data-i="'+i+'"> Rec.</label>'
+    +'<button class="s '+(x.p?'':'p')+'" data-a="rec" data-i="'+i+'">'+(x.p?'Deshacer':'✓ Recibido')+'</button>'
+    +'<button class="g" data-a="del" data-t="ing" data-i="'+i+'">✕</button></div>'
+  ).join(''):'<span class="mu">Aún no hay ingresos registrados.</span>';
+
+  // Deudas
+  $('#cntDeu').textContent = S.deu.length;
+  $('#deu').innerHTML=S.deu.length?S.deu.map((d,i)=>{
+    const sd=saldo(d),c=cuota(d);
+    return '<div class="deu"><b>'+E(d.n)+'</b> <small>'+(d.cap?'Capital '+fm(d.cap)+' · ':'')+d.pg+'/'+d.k+' cuotas pagadas'+(d.cap||d.q!=null?' · Cuota est. <b>'+fm(c)+'</b> · Termina '+addM(d.f,d.k):'')+(sd!=null?' · Saldo capital ≈ '+fm(sd):'')+'</small>'
+      +(d.cap&&d.ea==null&&d.q==null?' <span class="tag h">falta tasa EA</span>':'')
+      +(!d.cap&&d.q==null?' <span class="tag h">completa capital o cuota fija</span>':'')
+      +'<div class="f">'
+      +'<label class="mu">Capital $ <input type="number" value="'+(d.cap??'')+'" data-a="cap" data-i="'+i+'"></label>'
+      +'<label class="mu">Cuotas Totales <input type="number" value="'+(d.k??1)+'" data-a="k" data-i="'+i+'" style="width:70px"></label>'
+      +'<label class="mu">Pagadas <input type="number" value="'+(d.pg??0)+'" data-a="pg" data-i="'+i+'" style="width:70px"></label>'
+      +'<label class="mu">EA % <input type="number" step="0.01" value="'+(d.ea??'')+'" data-a="ea" data-i="'+i+'" style="width:85px"></label>'
+      +'<label class="mu">Manejo $ <input type="number" value="'+(d.cm??'')+'" data-a="cm" data-i="'+i+'" style="width:95px"></label>'
+      +'<label class="mu">Cuota Fija $ <input type="number" value="'+(d.q??'')+'" data-a="q" data-i="'+i+'" style="width:105px" placeholder="Opcional"></label>'
+      +'<button class="g" data-a="del" data-t="deu" data-i="'+i+'">🗑 Eliminar</button></div>'
+      +(d.cap&&d.ea!=null?'<small class="mu">Tasa MV equiv.: '+(mi(d)*100).toFixed(2)+'% · Intereses totales est.: '+fm(c*d.k-d.cap-(d.cm||0)*d.k)+' · Cuota manejo total: '+fm((d.cm||0)*d.k)+'</small>':'')+'</div>';
+  }).join(''):'<span class="mu">Sin deudas registradas.</span>';
+
+  // Simulador de Compras y Metas
+  S.sim = S.sim || [];
+  const totSimMensual = S.sim.filter(x=>x.act).reduce((a,x)=>a+simCuota(x),0);
+  const excedenteMes = pr[0].n;
+  const pctUso = (excedenteMes + totSimMensual) > 0 ? Math.round((totSimMensual / (excedenteMes + totSimMensual)) * 100) : 0;
+  $('#simResumen').innerHTML = '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;background:var(--bg);padding:8px 12px;border-radius:8px;border:1px solid var(--bd)">'
+    + '<span>Impacto mensual de simulaciones activas: <b>'+fm(totSimMensual)+'</b></span>'
+    + '<span class="tag '+(pctUso>60?'v':pctUso>30?'h':'o')+'">Consume el '+pctUso+'% de tu flujo neto del mes</span>'
+    + '</div>';
+  $('#simTagProy').textContent = totSimMensual > 0 ? 'Incluye '+fm(totSimMensual)+'/mes del Simulador' : 'Sin simulaciones activas';
+
+  $('#simList').innerHTML = S.sim.length ? S.sim.map((sm,i)=>{
+    const c = simCuota(sm);
+    const costoTotal = c * Math.max(1,+sm.k||1);
+    return '<div class="deu" style="opacity:'+(sm.act?1:0.65)+'">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">'
+      +'<div><label style="cursor:pointer;font-weight:600"><input type="checkbox" '+(sm.act?'checked':'')+' data-a="sim-act" data-i="'+i+'"> '+E(sm.n)+'</label> '
+      +'<span class="tag '+(sm.act?'o':'h')+'">'+(sm.act?'Activa en proyección':'Pausada')+'</span> '
+      +'<small>· Impacto mensual: <b>'+fm(c)+'</b> durante '+(sm.k||1)+' mes(es) · Total: '+fm(costoTotal)+'</small></div>'
+      +'<div class="tools" style="margin:0">'
+      +'<button class="s bl" data-a="sim-real" data-i="'+i+'" title="Convierte esta simulación en un gasto o deuda real">Pasar a Real</button>'
+      +'<button class="g" data-a="del" data-t="sim" data-i="'+i+'">✕</button>'
+      +'</div></div>'
+      +'<div class="f">'
+      +'<label class="mu">Concepto <input type="text" value="'+E(sm.n)+'" data-a="sim-n" data-i="'+i+'" style="width:180px"></label>'
+      +'<label class="mu">Valor Total $ <input type="number" value="'+(sm.cap||0)+'" data-a="sim-cap" data-i="'+i+'" style="width:110px"></label>'
+      +'<label class="mu">Cuotas/Meses <input type="number" value="'+(sm.k||1)+'" data-a="sim-k" data-i="'+i+'" style="width:65px"></label>'
+      +'<label class="mu">EA % <input type="number" step="0.1" value="'+(sm.ea||0)+'" data-a="sim-ea" data-i="'+i+'" style="width:75px"></label>'
+      +'<label class="mu">Manejo $ <input type="number" value="'+(sm.cm||0)+'" data-a="sim-cm" data-i="'+i+'" style="width:85px"></label>'
+      +'<label class="mu">Mes Inicio <input type="month" value="'+(sm.mes||TODAY.slice(0,7))+'" data-a="sim-mes" data-i="'+i+'" style="width:130px"></label>'
+      +'</div></div>';
+  }).join('') : '<small class="mu">No hay metas o compras en el simulador. Usa el botón "+ Nueva simulación / meta".</small>';
+
+  // Proyección 6 meses
+  $('#pry').innerHTML='<table><tr><th>Mes</th><th>Ingresos Proy.</th><th>Salidas Base + Deudas</th><th>Simulador Activo</th><th>Flujo Neto</th><th>Saldo Acumulado</th></tr>'
+    +pr.map(r=>'<tr><td><b>'+MES(r.mk)+'</b></td><td>'+fm(r.i)+'</td><td>'+fm(r.g-r.simGasto)+'</td><td>'+(r.simGasto?fm(r.simGasto):'—')+'</td><td class="'+(r.n<0?'neg':'pos')+'"><b>'+fm(r.n)+'</b></td><td class="'+(r.s<0?'neg':'')+'"><b>'+fm(r.s)+'</b></td></tr>').join('')+'</table>';
+
+  // Saldos actuales
+  if(!document.activeElement||document.activeElement.dataset.k===undefined){
+    $('#sal').innerHTML=Object.keys(S.sal).map(k=>'<div><label>'+E(k)+'</label><input type="number" value="'+Math.round(S.sal[k]||0)+'" data-a="sal" data-k="'+E(k)+'" style="width:100%"></div>').join('');
+  }
+  $('#jsonViewer').textContent = JSON.stringify(S, null, 2);
+}
+
+// Normalización y búsqueda inteligente (busca en pendientes y, si se pide actualizar, también en todos)
+function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(/\W+/).filter(w=>w.length>2)}
+function match(L,txt,includePaid=false){
+  const w=norm(txt);let b=-1,bs=0;
+  L.forEach((x,i)=>{
+    if(!includePaid && x.p) return;
+    const s=norm(x.d).filter(t=>w.includes(t)).length;
+    if(s>bs){bs=s;b=i}
+  });
+  if(b===-1 && !includePaid) return match(L,txt,true);
+  return b;
+}
+
+function apply(acc){
+  let n=0;
+  acc.forEach(a=>{
+    const f=a.f||TODAY;
+    if(a.t=='ing'||a.t=='gas'){
+      const idx=match(S[a.t], a.d, true);
+      if(idx>=0 && (S[a.t][idx].m===0 || a.upd)){
+        if(a.m!=null) S[a.t][idx].m = +a.m;
+        if(a.p!=null) S[a.t][idx].p = +a.p;
+        if(a.f) S[a.t][idx].f = a.f;
+        n++;
+      } else {
+        S[a.t].push({d:a.d||'Sin descripción',m:+a.m||0,f,p:a.p==null?(f<=TODAY?1:0):+a.p,r:a.r?1:0});
+        n++;
+      }
+    }
+    else if(a.t=='deu'){
+      const j=S.deu.findIndex(d=>!d.cap&&norm(d.n).some(t=>norm(a.n).includes(t)));
+      if(j>=0){Object.assign(S.deu[j],{cap:a.cap??S.deu[j].cap,ea:a.ea??S.deu[j].ea,k:+a.k||S.deu[j].k,cm:a.cm??S.deu[j].cm,q:a.q??S.deu[j].q});n++}
+      else{S.deu.push({n:a.n||'Deuda',cap:a.cap??null,ea:a.ea??null,k:+a.k||1,pg:0,cm:a.cm??null,f,q:a.q??undefined});n++}
+    }
+    else if(a.t=='sim'){
+      S.sim.push({n:a.n||'Compra Simulada',cap:+a.cap||0,k:+a.k||1,ea:+a.ea||0,cm:+a.cm||0,metodo:a.metodo||'Tarjeta / Ahorro',mes:f.slice(0,7),act:1});
+      n++;
+    }
+    else if(a.t=='pagado'){
+      const i=match(S.gas,a.d,false);
+      if(i>=0){if(a.m)S.gas[i].m=+a.m;S.gas[i].p=1;n++}
+      else{const j=S.deu.findIndex(d=>d.pg<d.k&&norm(d.n).some(t=>norm(a.d).includes(t)));if(j>=0){S.deu[j].pg++;n++}}
+    }
+    else if(a.t=='recibido'){
+      const i=match(S.ing,a.d,false);
+      if(i>=0){if(a.m)S.ing[i].m=+a.m;S.ing[i].p=1;n++}
+    }
+    else if(a.t=='saldo'){
+      const key = Object.keys(S.sal).find(k=>k.toLowerCase()===String(a.d||'').toLowerCase()) || a.d;
+      if(key){S.sal[key]=+a.m||0;n++}
+    }
+  });
+  return n;
+}
+
+// Intérprete local mejorado
+function localParse(txt) {
+  const lines = txt.split(/\n+/).map(l=>l.trim()).filter(Boolean);
+  const acc = [];
+  for (const line of lines) {
+    const low = line.toLowerCase();
+    const parseMonto = (str) => {
+      const clean = str.replace(/(\d)\s*mil\b/gi, '$1000');
+      const m = clean.match(/\$\s*([\d.,]+)|(?:por|de|valor|monto|a)\s+\$?\s*([\d.,]{4,})|([\d.]{4,})/i);
+      if (!m) return 0;
+      return Number((m[1]||m[2]||m[3]).replace(/\./g,'').replace(/,/g,'.')) || 0;
+    };
+    const monto = parseMonto(line);
+    const cuotasM = low.match(/(\d+)\s*(?:cuota|mes)/);
+    const eaM = low.match(/(?:ea|tasa|efectiva anual)\s*(?:de|del)?\s*([\d.,]+)\s*%/i) || low.match(/([\d.,]+)\s*%\s*(?:ea)?/i);
+    const cmM = low.match(/manejo\s*(?:de|por)?\s*\$?\s*([\d.,]+)/i);
+
+    if (/simular|simulaci[oó]n|meta|proyecto/i.test(low)) {
+      let nombre = line.replace(/simular|simulaci[oó]n|compra|meta|proyecto|de|por|a\s*\d+\s*cuotas?|ea.*|tasa.*|cuota de manejo.*|\$[\d.,]+/gi,'').trim() || 'Meta / Compra';
+      acc.push({t:'sim', n:nombre, cap:monto, k:cuotasM?Number(cuotasM[1]):1, ea:eaM?Number(eaM[1].replace(',','.')):0, cm:cmM?Number(cmM[1].replace(/\./g,'')):0, f:TODAY});
+    }
+    else if (/deuda|avance|tarjeta|cr[eé]dito/i.test(low) && !/^ya pagu[eé]|^pagu[eé]/i.test(low)) {
+      let nombre = 'Tarjeta / Deuda';
+      if (/nu\b/i.test(low)) nombre = 'Tarjeta Crédito NU (Avance/Compra)';
+      else if (/rappi/i.test(low)) nombre = 'Tarjeta Crédito RappiCard';
+      acc.push({t:'deu', n:nombre, cap:monto||null, ea:eaM?Number(eaM[1].replace(',','.')):null, k:cuotasM?Number(cuotasM[1]):1, cm:cmM?Number(cmM[1].replace(/\./g,'')):null, f:TODAY});
+    }
+    else if (/^(ya\s+)?pagu[eé]|^marcar\s+pagado|^pagado/i.test(low)) {
+      acc.push({t:'pagado', d:line, m:monto||undefined});
+    }
+    else if (/^(ya\s+)?recib[ií]|^me\s+pagaron|^recibido/i.test(low)) {
+      acc.push({t:'recibido', d:line, m:monto||undefined});
+    }
+    else if (/^saldo\s+/i.test(low)) {
+      for (const k of Object.keys(S.sal)) {
+        if (low.includes(k.toLowerCase())) acc.push({t:'saldo', d:k, m:monto});
+      }
+    }
+    else if (/ingreso|arriendo|salario|reembolso|venta|pila/i.test(low) && !/gasto|pagar/i.test(low)) {
+      const desc = line.replace(/^(añadir|agregar|actualizar)\s+(ingreso\s+)?(por\s+)?(pago\s+de\s+)?/i,'').replace(/\$?\s*[\d.,]+\s*(pesos|cop)?/gi,'').trim();
+      acc.push({t:'ing', d:desc||'Ingreso', m:monto, f:TODAY, p:/pendiente|por recibir/i.test(low)?0:1, r:/mensual|recurrente|arriendo|salario/i.test(low)?1:0, upd:true});
+    }
+    else {
+      const desc = line.replace(/^(añadir|agregar|actualizar)\s+(gasto\s+)?(por\s+|de\s+)?/i,'').replace(/\$?\s*[\d.,]+\s*(pesos|cop)?/gi,'').trim();
+      acc.push({t:'gas', d:desc||'Gasto', m:monto, f:TODAY, p:/pendiente|por pagar/i.test(low)?0:1, r:/mensual|recurrente/i.test(low)?1:0, upd:true});
+    }
+  }
+  return {acc, msg: 'Interpretado con motor inteligente local'};
+}
+
+// Conversión de archivo a base64 para Gemini API
+function fileToGenerativePart(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64Data = reader.result.split(',')[1];
+      resolve({ inline_data: { mime_type: file.type || 'image/jpeg', data: base64Data } });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Llamada a Google Gemini API desde cualquier navegador
+async function callGeminiAPI(txt, files) {
+  const apiKey = localStorage.getItem('gemini_api_key');
+  const model = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
+  if (!apiKey) return null;
+
+  const lp = pend().map(x=>x.d).concat(S.ing.filter(x=>!x.p).map(x=>x.d)).join('; ');
+  const promptText = `Hoy es ${TODAY}. Eres el asistente contable en pesos colombianos (COP) de Diego. Responde ÚNICAMENTE con un objeto JSON válido con esta estructura: {"acc":[...],"msg":"resumen corto en español"}.
+Cada acción dentro de "acc" debe tener "t" con uno de estos valores: "ing" | "gas" | "deu" | "sim" | "pagado" | "recibido" | "saldo".
+- ing/gas: {"t":"ing"|"gas", "d":"descripción", "m":monto_numérico_COP, "f":"YYYY-MM-DD", "r":1_si_recurrente_0_si_no, "p":1_si_ya_se_pagó_o_recibió_0_si_pendiente, "upd":true_si_actualiza_existente}.
+- deu: {"t":"deu", "n":"nombre tarjeta/deuda", "cap":capital_numérico, "ea":tasa_EA_porcentaje_o_null, "k":numero_cuotas, "cm":cuota_manejo_mensual_o_0, "f":"YYYY-MM-DD", "q":cuota_fija_opcional}.
+- sim: {"t":"sim", "n":"nombre compra o meta a simular", "cap":valor_total_COP, "k":numero_cuotas, "ea":tasa_EA_o_0, "cm":cuota_manejo_o_0, "f":"YYYY-MM-DD"}.
+- pagado/recibido: {"t":"pagado"|"recibido", "d":"nombre del ítem", "m":monto_opcional}.
+- saldo: {"t":"saldo", "d":"Efectivo|Nequi|Nu|Davivienda|Lemon|Binance|ARQ", "m":monto_COP}.
+Si el usuario adjunta un extracto bancario (imagen o PDF), extrae los cobros del periodo, pago mínimo/total, fecha límite, tasa EA y cuota de manejo.
+Ítems pendientes actuales: ${lp}.
+Instrucción del usuario: ${txt || '(Analizar extracto adjunto)'}`;
+
+  const parts = [{ text: promptText }];
+  if (files && files.length) {
+    for (const f of files) {
+      parts.push(await fileToGenerativePart(f));
+    }
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts }],
+      generationConfig: { responseMimeType: "application/json" }
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err?.error?.message || ('Error HTTP ' + res.status));
+  }
+  const data = await res.json();
+  const rawJson = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+  return JSON.parse(rawJson);
+}
+
+async function ask(txt, files) {
+  const apiKey = localStorage.getItem('gemini_api_key');
+  if (apiKey) {
+    return await callGeminiAPI(txt, files);
+  }
+  if (files && files.length) {
+    throw new Error('Para analizar imágenes o PDFs de extractos, configura primero tu Gemini API Key arriba en "✨ Conexión con Google Gemini API".');
+  }
+  return localParse(txt);
+}
+
+// Botón principal Procesar / Actualizar Todo
+$('#go').onclick = async () => {
+  const t = $('#q').value.trim(), fs = $('#fi').files;
+  if (!t && !fs.length) {
+    save('✓ Todos los saldos, tablas, simulaciones y proyecciones han sido actualizados y guardados.');
+    render();
+    return;
+  }
+  $('#go').disabled = true;
+  $('#msg').textContent = '⏳ Procesando instrucción…';
+  try {
+    const r = await ask(t, fs);
+    const n = apply(r.acc || []);
+    if (n) {
+      $('#q').value = '';
+      $('#fi').value = '';
+      $('#fileCount').textContent = '';
+      save((r.msg || 'Actualización aplicada') + ' (' + n + ' cambio' + (n > 1 ? 's' : '') + ').');
+      render();
+      $('#msg').textContent = '';
+    } else {
+      $('#msg').textContent = '⚠️ No se identificaron cambios. Especifica concepto y monto (ej. "Añadir gasto Agua $75.309").';
+    }
+  } catch (e) {
+    notify('Error al procesar: ' + (e.message || e), 'warn');
+    $('#msg').textContent = '';
+  }
+  $('#go').disabled = false;
+};
+
+// LECTURA DIRECTA DEL ARCHIVO .XLSX CON SHEETJS
+function parseSheetFromWorkbook(wb, sheetName, usarEstimados) {
+  // 1. Leer Saldos desde la hoja 'Actual' si existe
+  if (wb.SheetNames.includes('Actual')) {
+    const rowsAct = XLSX.utils.sheet_to_json(wb.Sheets['Actual'], {header:1, defval:null});
+    const newSal = {};
+    rowsAct.forEach(r => {
+      if (!r) return;
+      const k1 = String(r[0]||'').trim();
+      if (['Efectivo','Nequi','Nu','Davivienda'].includes(k1) && !isNaN(Number(r[1]))) {
+        newSal[k1] = Math.round(Number(r[1]));
+      }
+      const k2 = String(r[3]||'').trim();
+      if (['Lemon','Binance','ARQ'].includes(k2) && !isNaN(Number(r[5]))) {
+        newSal[k2] = Math.round(Number(r[5]));
+      }
+    });
+    if (Object.keys(newSal).length) S.sal = newSal;
+  }
+
+  // 2. Extraer promedios de 'Presupuesto Prom' para rellenar vacíos si se solicita
+  const mapProm = {};
+  if (wb.SheetNames.includes('Presupuesto Prom')) {
+    const rowsP = XLSX.utils.sheet_to_json(wb.Sheets['Presupuesto Prom'], {header:1, defval:null});
+    rowsP.forEach(r => {
+      if (r && r[0] && !isNaN(Number(r[1])) && Number(r[1]) > 0) {
+        mapProm[String(r[0]).trim().toLowerCase()] = Number(r[1]);
+      }
+    });
+  }
+
+  // 3. Leer hoja mensual seleccionada
+  const targetSheet = wb.SheetNames.includes(sheetName) ? sheetName : wb.SheetNames[0];
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[targetSheet], {header:1, raw:false, dateNF:'yyyy-mm-dd', defval:null});
+  let mode = null;
+  const newIng = [], newGas = [];
+
+  const formatExcelDate = (val, freqStr) => {
+    if (val) {
+      const s = String(val).trim();
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+      const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (dmy) return `${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;
+    }
+    const dayMatch = String(freqStr||'').match(/d[ií]a\s*(\d{1,2})/i);
+    const day = dayMatch ? String(Math.min(28, Number(dayMatch[1]))).padStart(2,'0') : '15';
+    const mesMap = {Julio:'2026-07', Agosto:'2026-08', Septiembre:'2026-09', Octubre:'2026-10'};
+    const pref = mesMap[targetSheet] || TODAY.slice(0,7);
+    return `${pref}-${day}`;
+  };
+
+  for (const r of rows) {
+    if (!r || !r[0]) continue;
+    const c0 = String(r[0]).trim();
+    if (/INGRESOS MENSUALES ESTIMADOS/i.test(c0)) { mode = 'ing'; continue; }
+    if (/GASTOS MENSUALES FIJOS/i.test(c0)) { mode = 'gas'; continue; }
+    if (/TOTAL INGRESOS|TOTAL GASTOS|FLUJO DE CAJA/i.test(c0)) { mode = null; continue; }
+    if (/Descripci[oó]n del Ingreso|Concepto \/ Gasto/i.test(c0)) continue;
+
+    const rawMonto = r[1] != null ? Number(String(r[1]).replace(/[^\d.-]/g,'')) : 0;
+    const estMonto = mapProm[c0.toLowerCase()] || (c0.toLowerCase().includes('salario') ? 750000 : c0.toLowerCase().includes('pila diego') ? 536400 : 0);
+    const montoFinal = rawMonto > 0 ? rawMonto : (usarEstimados ? estMonto : 0);
+    const freq = String(r[2]||'');
+    const fechaCol = r[3];
+    const fIso = formatExcelDate(fechaCol, freq);
+
+    if (mode === 'ing') {
+      const pagado = (rawMonto > 0 && fIso <= TODAY) ? 1 : 0;
+      newIng.push({d:c0, m:montoFinal, f:fIso, p:pagado, r:/quincena|mes|variable/i.test(freq)?1:0});
+    } else if (mode === 'gas') {
+      const tieneFechaPago = Boolean(fechaCol && String(fechaCol).trim() !== '');
+      const pagado = (tieneFechaPago && fIso <= TODAY) ? 1 : 0;
+      newGas.push({d:c0, m:montoFinal, f:fIso, p:pagado, r:1});
+    }
+  }
+
+  if (newIng.length || newGas.length) {
+    S.ing = newIng;
+    S.gas = newGas;
+  }
+
+  // 4. Leer 'Simulador y Proyecciones' si existe
+  if (wb.SheetNames.includes('Simulador y Proyecciones')) {
+    const rowsSim = XLSX.utils.sheet_to_json(wb.Sheets['Simulador y Proyecciones'], {header:1, defval:null});
+    const simItems = [];
+    rowsSim.forEach(r => {
+      if (!r || !r[0]) return;
+      const c0 = String(r[0]).trim();
+      const val = Number(r[1]);
+      if (!isNaN(val) && val > 0 && !/Ítem|Concepto/i.test(c0)) {
+        simItems.push({n:c0, cap:val, k:1, ea:0, cm:0, metodo:String(r[2]||'Ahorro'), mes:TODAY.slice(0,7), act:1});
+      }
+    });
+    if (simItems.length) S.sim = simItems;
+  }
+}
+
+$('#xlsxIn').onchange = e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = new Uint8Array(ev.target.result);
+      uploadedWorkbook = XLSX.read(data, {type: 'array', cellDates: true});
+      const sheetElegida = $('#selMes').value;
+      parseSheetFromWorkbook(uploadedWorkbook, sheetElegida, $('#chkEstimados').checked);
+      save(`✓ Archivo Excel "${file.name}" leído directamente (${uploadedWorkbook.SheetNames.length} hojas detectadas).`);
+      render();
+    } catch (err) {
+      notify('Error al leer el archivo Excel: ' + err.message, 'warn');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+};
+
+// EXPORTAR DE VUELTA A EXCEL (.XLSX)
+$('#xlsxOut').onclick = () => {
+  try {
+    const wb = XLSX.utils.book_new();
+    // 1. Hoja Saldos Actuales
+    const salRows = [['Cuenta / Plataforma', 'Saldo Actual (COP)']];
+    Object.entries(S.sal).forEach(([k,v]) => salRows.push([k, Number(v||0)]));
+    salRows.push(['TOTAL PATRIMONIO LÍQUIDO', Object.values(S.sal).reduce((a,b)=>a+(+b||0),0)]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(salRows), 'Actual');
+
+    // 2. Hoja Ingresos
+    const ingRows = [['Descripción del Ingreso', 'Monto (COP)', 'Fecha', 'Estado', 'Recurrente']];
+    S.ing.forEach(x => ingRows.push([x.d, Number(x.m||0), x.f, x.p ? 'Recibido' : 'Por recibir', x.r ? 'Sí' : 'No']));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ingRows), 'Ingresos_Mes');
+
+    // 3. Hoja Gastos y Compromisos
+    const gasRows = [['Concepto / Gasto Fijo', 'Monto (COP)', 'Fecha Límite / Pago', 'Estado', 'Recurrente']];
+    S.gas.forEach(x => gasRows.push([x.d, Number(x.m||0), x.f, x.p ? 'Pagado' : 'Pendiente', x.r ? 'Sí' : 'No']));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(gasRows), 'Gastos_Mes');
+
+    // 4. Hoja Deudas y Tarjetas
+    const deuRows = [['Nombre de la Deuda', 'Capital (COP)', 'Tasa EA (%)', 'Cuotas Totales', 'Cuotas Pagadas', 'Cuota Manejo (COP)', 'Cuota Estimada (COP)', 'Saldo Estimado (COP)']];
+    S.deu.forEach(d => deuRows.push([d.n, d.cap||0, d.ea||0, d.k||1, d.pg||0, d.cm||0, Math.round(cuota(d)), Math.round(saldo(d)||0)]));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(deuRows), 'Control_Deudas');
+
+    // 5. Hoja Simulador y Metas
+    const simRows = [['Ítem / Meta Simulada', 'Valor Total (COP)', 'Cuotas / Meses', 'Tasa EA (%)', 'Cuota Manejo (COP)', 'Impacto Mensual (COP)', 'Mes Inicio', 'Activa en Proyección']];
+    (S.sim||[]).forEach(sm => simRows.push([sm.n, sm.cap||0, sm.k||1, sm.ea||0, sm.cm||0, Math.round(simCuota(sm)), sm.mes||TODAY.slice(0,7), sm.act ? 'Sí' : 'No']));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(simRows), 'Simulador_Metas');
+
+    // 6. Hoja Proyección 6 Meses
+    const pr = proy();
+    const pryRows = [['Mes', 'Ingresos Proyectados (COP)', 'Salidas Base + Deudas (COP)', 'Simulador Activo (COP)', 'Flujo Neto (COP)', 'Saldo Acumulado (COP)']];
+    pr.forEach(r => pryRows.push([r.mk, Math.round(r.i), Math.round(r.g - r.simGasto), Math.round(r.simGasto), Math.round(r.n), Math.round(r.s)]));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pryRows), 'Proyeccion_6_Meses');
+
+    XLSX.writeFile(wb, `Asistente_Contable_Actualizado_${TODAY}.xlsx`);
+    notify('✓ Archivo Excel (.xlsx) generado y descargado con todas tus hojas actualizadas.');
+  } catch (err) {
+    notify('Error al exportar Excel: ' + err.message, 'warn');
+  }
+};
+
+// Eventos de botones e inputs
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-a]');
+  if (!b) return;
+  const {a, t, i} = b.dataset;
+  if (a == 'pay') { t == 'gas' ? S.gas[i].p = 1 : S.deu[i].pg++; save('✓ Marcado como pagado.'); }
+  else if (a == 'unpay') { S.gas[i].p = 0; save('✓ Devuelto a pendientes.'); }
+  else if (a == 'rec') { S.ing[i].p = S.ing[i].p ? 0 : 1; save('✓ Estado de ingreso actualizado.'); }
+  else if (a == 'del') { S[t].splice(i, 1); save('✓ Ítem eliminado.'); }
+  else if (a == 'sim-real') {
+    const sm = S.sim[i];
+    if ((+sm.k||1) > 1 || (+sm.ea||0) > 0) {
+      S.deu.push({n:sm.n, cap:+sm.cap||0, ea:+sm.ea||null, k:+sm.k||1, pg:0, cm:+sm.cm||0, f:TODAY});
+    } else {
+      S.gas.push({d:sm.n, m:+sm.cap||0, f:TODAY, p:0, r:0});
+    }
+    S.sim.splice(i, 1);
+    save(`✓ "${sm.n}" se convirtió en un compromiso real.`);
+  }
+  render();
+});
+
+document.addEventListener('change', e => {
+  const el = e.target, {a, t, i, k} = el.dataset;
+  if (!a) return;
+  const v = el.value;
+  if (a == 'sal') S.sal[k] = +v || 0;
+  else if (a == 'f') { if (!v) return; const x = S[t][i]; t == 'deu' ? x.f = addM(v, -(x.pg + 1)) : x.f = v; }
+  else if (a == 'm') S[t][i].m = +v || 0;
+  else if (a == 'r') S[t][i].r = el.checked ? 1 : 0;
+  else if (['ea','cm','cap','k','pg','q'].includes(a)) S.deu[i][a] = v === '' ? null : +v;
+  else if (a == 'sim-act') S.sim[i].act = el.checked ? 1 : 0;
+  else if (a == 'sim-n') S.sim[i].n = v;
+  else if (['sim-cap','sim-k','sim-ea','sim-cm'].includes(a)) S.sim[i][a.slice(4)] = +v || 0;
+  else if (a == 'sim-mes') S.sim[i].mes = v;
+  save();
+  render();
+});
+
+// Botones de control y adición manual
+$('#btnRecalc').onclick = () => { save('✓ Todos los cambios han sido guardados y recalculados.'); render(); };
+$('#verPagadosBtn').onclick = () => { showPagados = !showPagados; $('#pagadosBox').style.display = showPagados ? 'block' : 'none'; };
+$('#addGasBtn').onclick = () => { S.gas.push({d:'Nuevo gasto', m:0, f:TODAY, p:0, r:1}); save('✓ Fila de gasto añadida.'); render(); };
+$('#addIngBtn').onclick = () => { S.ing.push({d:'Nuevo ingreso', m:0, f:TODAY, p:0, r:1}); save('✓ Fila de ingreso añadida.'); render(); };
+$('#addDeuBtn').onclick = () => { S.deu.push({n:'Nueva tarjeta / deuda', cap:0, ea:28, k:1, pg:0, cm:0, f:TODAY}); save('✓ Nueva deuda añadida.'); render(); };
+$('#addSimBtn').onclick = () => { S.sim.push({n:'Nueva compra / meta', cap:200000, k:1, ea:0, cm:0, metodo:'Ahorro', mes:TODAY.slice(0,7), act:1}); save('✓ Nueva simulación añadida.'); render(); };
+$('#addCuentaBtn').onclick = () => {
+  const nombre = prompt('Nombre de la nueva cuenta o bolsillo (ej. Bolsillo Viaje, Lulo Bank, Fiducuenta):');
+  if (nombre && nombre.trim()) { S.sal[nombre.trim()] = 0; save('✓ Cuenta añadida.'); render(); }
+};
+
+function reloadFromSelectedSheet() {
+  const shName = $('#selMes').value;
+  const est = $('#chkEstimados').checked;
+  if (uploadedWorkbook) {
+    parseSheetFromWorkbook(uploadedWorkbook, shName, est);
+  } else {
+    const keepCripto = 'Lemon' in S.sal;
+    const prevSim = S.sim;
+    S = buildInitialState(shName, est, keepCripto);
+    S.sim = prevSim;
+  }
+  save(`✓ Mostrando hoja "${shName}" (${est ? 'con estimados recurrentes' : 'valores exactos de la hoja'}).`);
+  render();
+}
+
+$('#selMes').onchange = reloadFromSelectedSheet;
+$('#chkEstimados').onchange = reloadFromSelectedSheet;
+$('#btnRestaurarBase').onclick = () => {
+  uploadedWorkbook = null;
+  S = buildInitialState($('#selMes').value, $('#chkEstimados').checked, true);
+  save('✓ Datos restaurados desde tu plantilla original de Excel.');
+  render();
+};
+
+$('#togCripto').onclick = () => {
+  if ('Lemon' in S.sal) { delete S.sal.Lemon; delete S.sal.Binance; delete S.sal.ARQ; }
+  else { Object.assign(S.sal, {Lemon:100493, Binance:125196, ARQ:95255}); }
+  save('✓ Cuentas Cripto/USD alternadas en el saldo total.');
+  render();
+};
+
+// Configuración Gemini API Key
+function updateApiBadge() {
+  const key = localStorage.getItem('gemini_api_key');
+  const badge = $('#apiBadge');
+  if (key) {
+    badge.className = 'tag o';
+    badge.textContent = '✓ Gemini AI Conectado';
+    $('#apiKeyInput').value = key;
+  } else {
+    badge.className = 'tag h';
+    badge.textContent = 'Modo Local Activo';
+    $('#apiKeyInput').value = '';
+  }
+}
+$('#btnSaveKey').onclick = () => {
+  const k = $('#apiKeyInput').value.trim();
+  if (!k) return notify('Ingresa una API Key válida de Google AI Studio.', 'warn');
+  localStorage.setItem('gemini_api_key', k);
+  localStorage.setItem('gemini_model', $('#geminiModel').value);
+  updateApiBadge();
+  notify('✓ Gemini API Key guardada en este navegador. Ya puedes procesar texto libre y extractos en PDF/Imagen.');
+};
+$('#btnClearKey').onclick = () => {
+  localStorage.removeItem('gemini_api_key');
+  updateApiBadge();
+  notify('API Key eliminada. Usando motor local.', 'warn');
+};
+$('#fi').onchange = e => {
+  const n = e.target.files.length;
+  $('#fileCount').textContent = n ? `${n} archivo(s) adjunto(s)` : '';
+};
+
+// Exportar e importar JSON
+$('#ex').onclick = () => {
+  const blob = new Blob([JSON.stringify(S, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'finanzas-' + TODAY + '.json';
+  a.click();
+};
+$('#imp').onchange = e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      if (parsed && parsed.sal) { S = parsed; save('✓ Respaldo JSON importado correctamente.'); render(); }
+    } catch (err) { notify('Archivo JSON inválido.', 'warn'); }
+  };
+  reader.readAsText(file);
+};
+
+function init() {
+  updateApiBadge();
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch(e) {}
+  if (saved && saved.sal && (saved.ing?.length || saved.gas?.length)) {
+    S = Object.assign(buildInitialState("Octubre", true, true), saved);
+    if (S.sheet) $('#selMes').value = S.sheet;
+  } else {
+    S = buildInitialState("Octubre", true, true);
+    save();
+  }
+  render();
+}
+init();
+</script>
+</body>
+</html>
