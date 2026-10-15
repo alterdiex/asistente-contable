@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Asistente Contable Personal - Diego León</title>
-<!-- Librería SheetJS para leer y exportar archivos Excel (.xlsx) directamente en el navegador -->
+<title>Asistente Contable Personal</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
@@ -76,23 +75,21 @@ details.cfg summary{cursor:pointer;font-weight:600;font-size:14px;outline:none}
 </head>
 <body>
 <main>
-  <!-- ENCABEZADO Y BARRA DE EXCEL / RESPALDO -->
   <div class="sec-head" style="margin-bottom:6px">
     <div>
       <h1>Asistente Contable Personal</h1>
       <small id="hoy"></small> · <small id="st" class="pos" style="font-weight:500"></small>
     </div>
     <div class="tools" style="margin:0">
-      <label class="btn-file primary" title="Selecciona tu archivo Asistente_Contable_Personal.xlsx para leer todas sus hojas">
+      <label class="btn-file primary">
         📥 Cargar Excel (.xlsx)
         <input type="file" id="xlsxIn" accept=".xlsx,.xls" hidden>
       </label>
-      <button class="s p" id="xlsxOut" title="Descarga tus datos actualizados en un nuevo archivo Excel (.xlsx)">📤 Exportar a Excel (.xlsx)</button>
-      <button class="s" id="btnRecalc" title="Guarda todos los cambios hechos en las tablas y recalcula proyecciones">🔄 Guardar y Recalcular</button>
+      <button class="s p" id="xlsxOut">📤 Exportar a Excel (.xlsx)</button>
+      <button class="s" id="btnRecalc">🔄 Guardar y Recalcular</button>
     </div>
   </div>
 
-  <!-- SELECTOR DE HOJA DE EXCEL Y MODO DE DATOS -->
   <div class="card" style="padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <small><b>Hoja / Mes activo:</b></small>
@@ -113,16 +110,16 @@ details.cfg summary{cursor:pointer;font-weight:600;font-size:14px;outline:none}
     </div>
   </div>
 
-  <!-- CONFIGURACIÓN DE CONEXIÓN A LA API DE GEMINI -->
   <details class="cfg" id="geminiCfg">
     <summary>✨ Conexión con Google Gemini API (Para cualquier navegador y lectura de extractos PDF/Imagen) <span id="apiBadge" class="tag h" style="margin-left:6px">Modo Local Activo</span></summary>
     <div style="margin-top:10px;font-size:13.5px">
-      <p style="margin:0 0 8px">Pega tu API Key de <b>Google AI Studio</b> (<code>AIza...</code>) para que <b>Gemini 2.5 Flash</b> interprete instrucciones complejas y lea fotos o PDFs de tus extractos bancarios desde cualquier navegador. Se guarda únicamente en este navegador.</p>
+      <p style="margin:0 0 8px">Pega tu API Key de <b>Google AI Studio</b> (<code>AIza...</code>) para que <b>Gemini 3.8 Flash</b> interprete instrucciones complejas y lea fotos o PDFs de tus extractos bancarios desde cualquier navegador. Se guarda únicamente en este navegador.</p>
       <div class="tools">
-        <input type="password" id="apiKeyInput" placeholder="AIzaSy..." style="flex:1;min-width:240px">
+        <input type="password" id="apiKeyInput" placeholder="AIzaSy..." style="flex:1;min-width:220px">
         <select id="geminiModel" style="width:auto">
-          <option value="gemini-2.5-flash">gemini-2.5-flash (Recomendado)</option>
-          <option value="gemini-2.5-pro">gemini-2.5-pro (Avanzado)</option>
+          <option value="gemini-3.8-flash">gemini-3.8-flash (Recomendado)</option>
+          <option value="gemini-3.8-pro">gemini-3.8-pro (Avanzado)</option>
+          <option value="gemini-2.5-flash">gemini-2.5-flash (Legacy)</option>
         </select>
         <button class="p s" id="btnSaveKey">Guardar API Key</button>
         <button class="s" id="btnClearKey">Borrar Key</button>
@@ -130,13 +127,9 @@ details.cfg summary{cursor:pointer;font-weight:600;font-size:14px;outline:none}
     </div>
   </details>
 
-  <!-- NOTIFICACIÓN DE ESTADO -->
   <div id="notif" class="banner ok" style="display:none"></div>
-
-  <!-- KPIs PRINCIPALES -->
   <div class="kpis" id="kpis"></div>
 
-  <!-- LENGUAJE NATURAL Y ADJUNTOS -->
   <div class="card">
     <div class="sec-head">
       <h2>Añadir o actualizar con lenguaje natural (Gemini AI / Motor Local)</h2>
@@ -154,7 +147,6 @@ details.cfg summary{cursor:pointer;font-weight:600;font-size:14px;outline:none}
     </div>
   </div>
 
-  <!-- PENDIENTES POR PAGAR -->
   <div class="card">
     <div class="sec-head">
       <h2>Pendientes por pagar (<span id="cntPen">0</span>)</h2>
@@ -170,7 +162,6 @@ details.cfg summary{cursor:pointer;font-weight:600;font-size:14px;outline:none}
     </div>
   </div>
 
-  <!-- INGRESOS -->
   <div class="card">
     <div class="sec-head">
       <h2>Ingresos del periodo (<span id="cntIng">0</span>)</h2>
@@ -179,7 +170,6 @@ details.cfg summary{cursor:pointer;font-weight:600;font-size:14px;outline:none}
     <div id="ing"></div>
   </div>
 
-  <!-- DEUDAS Y TARJETAS -->
   <div class="card">
     <div class="sec-head">
       <h2>Deudas y tarjetas de crédito (<span id="cntDeu">0</span>)</h2>
@@ -188,7 +178,6 @@ details.cfg summary{cursor:pointer;font-weight:600;font-size:14px;outline:none}
     <div id="deu"></div>
   </div>
 
-  <!-- NUEVO MÓDULO: SIMULADOR DE COMPRAS Y METAS -->
   <div class="card" style="border-left:4px solid var(--ac)">
     <div class="sec-head">
       <div>
@@ -201,7 +190,6 @@ details.cfg summary{cursor:pointer;font-weight:600;font-size:14px;outline:none}
     <div id="simList"></div>
   </div>
 
-  <!-- PROYECCIÓN A 6 MESES -->
   <div class="card">
     <div class="sec-head">
       <h2>Proyección de Flujo de Caja a 6 Meses</h2>
@@ -211,7 +199,6 @@ details.cfg summary{cursor:pointer;font-weight:600;font-size:14px;outline:none}
     <small style="display:block;margin-top:8px">Calculado tomando tu saldo actual más los ingresos/gastos pendientes de este mes y proyectando los siguientes 5 meses con los ítems recurrentes, las cuotas restantes de tus tarjetas y los ítems activos en el Simulador.</small>
   </div>
 
-  <!-- SALDOS ACTUALES -->
   <div class="card">
     <div class="sec-head">
       <h2>Saldos actuales por cuenta / plataforma (Hoja "Actual")</h2>
@@ -224,11 +211,10 @@ details.cfg summary{cursor:pointer;font-weight:600;font-size:14px;outline:none}
     </div>
   </div>
 
-  <!-- VISOR DE BASE DE DATOS LOCAL -->
   <details class="cfg">
     <summary>🗄️ ¿Dónde están mis datos? Visor de Almacenamiento Local (<code>localStorage</code>)</summary>
     <div style="margin-top:10px;font-size:13px">
-      <p style="margin:0 0 8px">Tus datos están guardados localmente en este navegador bajo la clave <code>fin_asistente_v2</code>. Cada vez que modificas un número, agregas algo con lenguaje natural o cargas tu Excel, este registro se actualiza al instante. Puedes descargarlo como <b>Excel (.xlsx)</b> con el botón superior derecho.</p>
+      <p style="margin:0 0 8px">Tus datos están guardados localmente en este navegador bajo la clave <code>fin_asistente_v2</code>. Puedes descargarlo como <b>Excel (.xlsx)</b> con el botón superior derecho.</p>
       <pre id="jsonViewer" style="background:var(--bg);padding:10px;border-radius:8px;border:1px solid var(--bd);max-height:220px;overflow:auto;font-size:11.5px;margin:0"></pre>
     </div>
   </details>
@@ -243,10 +229,10 @@ const dd=s=>Math.round((P(s)-P(TODAY))/864e5),MES=s=>P(s+'-01').toLocaleDateStri
 const fm=n=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Math.round(n||0));
 
 const STORAGE_KEY = 'fin_asistente_v2';
+const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
 let showPagados = false;
 let uploadedWorkbook = null;
 
-// Base de datos de todas las hojas de Asistente_Contable_Personal.xlsx precargada
 const EXCEL_SHEETS = {
   "Octubre": {
     ing: [
@@ -394,7 +380,6 @@ function buildInitialState(sheetName = "Octubre", usarEstimados = true, incluirC
     {n:"Tarjeta Crédito RappiCard", cap:586200, ea:null, k:6, pg:5, cm:0, f:"2026-05-01", q:97700},
     {n:"Tarjeta Crédito NU", cap:null, ea:null, k:6, pg:0, cm:null, f:"2026-09-18"}
   ];
-  // Datos de la hoja "Simulador y Proyecciones"
   const sim = [
     {n:"Gafas Nuevas (Proyecto 1)", cap:250000, k:1, ea:0, cm:0, metodo:"Nu Bank (Ahorros)", mes:TODAY.slice(0,7), act:1},
     {n:"Festival Cordillera + Salida Fin de Semana", cap:350000, k:1, ea:0, cm:0, metodo:"Excedente / Ahorro", mes:addM(TODAY,1).slice(0,7), act:0}
@@ -404,7 +389,6 @@ function buildInitialState(sheetName = "Octubre", usarEstimados = true, incluirC
 
 let S = buildInitialState("Octubre", true, true);
 
-// Fórmulas financieras
 const mi=d=>Math.pow(1+(+d.ea||0)/100,1/12)-1;
 const base=d=>d.q!=null?d.q-(+d.cm||0):(+d.cap?(mi(d)?d.cap*mi(d)/(1-Math.pow(1+mi(d),-(+d.k||1))):d.cap/(+d.k||1)):0);
 const cuota=d=>d.q!=null?+d.q:base(d)+(+d.cm||0);
@@ -422,7 +406,7 @@ function save(msgTxt) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(S));
     const timeStr = new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    $('#st').textContent = '✓ Guardado localmente en este navegador (' + timeStr + ')';
+    $('#st').textContent = '✓ Guardado localmente (' + timeStr + ')';
     $('#jsonViewer').textContent = JSON.stringify(S, null, 2);
     if (msgTxt) notify(msgTxt, 'ok');
   } catch(e) {
@@ -450,7 +434,6 @@ function proy(){
         if(k?f==mk:f<=mk) dv+=cuota(d);
       }
     });
-    // Sumar impacto de compras/metas activas en el Simulador
     let simGasto=0;
     (S.sim||[]).forEach(sm=>{
       if(!sm.act) return;
@@ -485,7 +468,6 @@ function render(){
     ['Saldo estimado fin de mes',fm(pr[0].s)]
   ].map(a=>'<div class="kpi"><small>'+a[0]+'</small><b>'+a[1]+'</b></div>').join('');
 
-  // Pendientes
   $('#cntPen').textContent = pe.length;
   $('#pen').innerHTML=pe.length?pe.map(x=>{
     const r=rel(x.f);
@@ -497,7 +479,6 @@ function render(){
       +(x.t=='gas'?'<button class="g" data-a="del" data-t="gas" data-i="'+x.i+'">✕</button>':'<span></span>')+'</div>';
   }).join(''):'<span class="mu">🎉 Sin pagos pendientes para este mes.</span>';
 
-  // Gastos ya pagados
   const gp = S.gas.map((x,i)=>({x,i})).filter(o=>o.x.p);
   $('#gasPagados').innerHTML = gp.length ? gp.map(({x,i})=>
     '<div class="row"><div>'+E(x.d)+' <span class="tag o">Pagado</span></div>'
@@ -507,7 +488,6 @@ function render(){
     +'<button class="g" data-a="del" data-t="gas" data-i="'+i+'">✕</button></div>'
   ).join('') : '<small class="mu">No hay gastos marcados como pagados.</small>';
 
-  // Ingresos
   $('#cntIng').textContent = S.ing.length;
   const ii=S.ing.map((x,i)=>({x,i})).sort((a,b)=>a.x.f<b.x.f?-1:1);
   $('#ing').innerHTML=ii.length?ii.map(({x,i})=>
@@ -519,7 +499,6 @@ function render(){
     +'<button class="g" data-a="del" data-t="ing" data-i="'+i+'">✕</button></div>'
   ).join(''):'<span class="mu">Aún no hay ingresos registrados.</span>';
 
-  // Deudas
   $('#cntDeu').textContent = S.deu.length;
   $('#deu').innerHTML=S.deu.length?S.deu.map((d,i)=>{
     const sd=saldo(d),c=cuota(d);
@@ -537,7 +516,6 @@ function render(){
       +(d.cap&&d.ea!=null?'<small class="mu">Tasa MV equiv.: '+(mi(d)*100).toFixed(2)+'% · Intereses totales est.: '+fm(c*d.k-d.cap-(d.cm||0)*d.k)+' · Cuota manejo total: '+fm((d.cm||0)*d.k)+'</small>':'')+'</div>';
   }).join(''):'<span class="mu">Sin deudas registradas.</span>';
 
-  // Simulador de Compras y Metas
   S.sim = S.sim || [];
   const totSimMensual = S.sim.filter(x=>x.act).reduce((a,x)=>a+simCuota(x),0);
   const excedenteMes = pr[0].n;
@@ -557,7 +535,7 @@ function render(){
       +'<span class="tag '+(sm.act?'o':'h')+'">'+(sm.act?'Activa en proyección':'Pausada')+'</span> '
       +'<small>· Impacto mensual: <b>'+fm(c)+'</b> durante '+(sm.k||1)+' mes(es) · Total: '+fm(costoTotal)+'</small></div>'
       +'<div class="tools" style="margin:0">'
-      +'<button class="s bl" data-a="sim-real" data-i="'+i+'" title="Convierte esta simulación en un gasto o deuda real">Pasar a Real</button>'
+      +'<button class="s bl" data-a="sim-real" data-i="'+i+'">Pasar a Real</button>'
       +'<button class="g" data-a="del" data-t="sim" data-i="'+i+'">✕</button>'
       +'</div></div>'
       +'<div class="f">'
@@ -570,18 +548,15 @@ function render(){
       +'</div></div>';
   }).join('') : '<small class="mu">No hay metas o compras en el simulador. Usa el botón "+ Nueva simulación / meta".</small>';
 
-  // Proyección 6 meses
   $('#pry').innerHTML='<table><tr><th>Mes</th><th>Ingresos Proy.</th><th>Salidas Base + Deudas</th><th>Simulador Activo</th><th>Flujo Neto</th><th>Saldo Acumulado</th></tr>'
     +pr.map(r=>'<tr><td><b>'+MES(r.mk)+'</b></td><td>'+fm(r.i)+'</td><td>'+fm(r.g-r.simGasto)+'</td><td>'+(r.simGasto?fm(r.simGasto):'—')+'</td><td class="'+(r.n<0?'neg':'pos')+'"><b>'+fm(r.n)+'</b></td><td class="'+(r.s<0?'neg':'')+'"><b>'+fm(r.s)+'</b></td></tr>').join('')+'</table>';
 
-  // Saldos actuales
   if(!document.activeElement||document.activeElement.dataset.k===undefined){
     $('#sal').innerHTML=Object.keys(S.sal).map(k=>'<div><label>'+E(k)+'</label><input type="number" value="'+Math.round(S.sal[k]||0)+'" data-a="sal" data-k="'+E(k)+'" style="width:100%"></div>').join('');
   }
   $('#jsonViewer').textContent = JSON.stringify(S, null, 2);
 }
 
-// Normalización y búsqueda inteligente (busca en pendientes y, si se pide actualizar, también en todos)
 function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(/\W+/).filter(w=>w.length>2)}
 function match(L,txt,includePaid=false){
   const w=norm(txt);let b=-1,bs=0;
@@ -636,7 +611,6 @@ function apply(acc){
   return n;
 }
 
-// Intérprete local mejorado
 function localParse(txt) {
   const lines = txt.split(/\n+/).map(l=>l.trim()).filter(Boolean);
   const acc = [];
@@ -686,7 +660,6 @@ function localParse(txt) {
   return {acc, msg: 'Interpretado con motor inteligente local'};
 }
 
-// Conversión de archivo a base64 para Gemini API
 function fileToGenerativePart(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -699,14 +672,13 @@ function fileToGenerativePart(file) {
   });
 }
 
-// Llamada a Google Gemini API desde cualquier navegador
 async function callGeminiAPI(txt, files) {
   const apiKey = localStorage.getItem('gemini_api_key');
-  const model = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
+  const model = localStorage.getItem('gemini_model') || DEFAULT_GEMINI_MODEL;
   if (!apiKey) return null;
 
   const lp = pend().map(x=>x.d).concat(S.ing.filter(x=>!x.p).map(x=>x.d)).join('; ');
-  const promptText = `Hoy es ${TODAY}. Eres el asistente contable en pesos colombianos (COP) de Diego. Responde ÚNICAMENTE con un objeto JSON válido con esta estructura: {"acc":[...],"msg":"resumen corto en español"}.
+  const promptText = `Hoy es ${TODAY}. Eres el asistente contable en pesos colombianos (COP). Responde ÚNICAMENTE con un objeto JSON válido con esta estructura: {"acc":[...],"msg":"resumen corto en español"}.
 Cada acción dentro de "acc" debe tener "t" con uno de estos valores: "ing" | "gas" | "deu" | "sim" | "pagado" | "recibido" | "saldo".
 - ing/gas: {"t":"ing"|"gas", "d":"descripción", "m":monto_numérico_COP, "f":"YYYY-MM-DD", "r":1_si_recurrente_0_si_no, "p":1_si_ya_se_pagó_o_recibió_0_si_pendiente, "upd":true_si_actualiza_existente}.
 - deu: {"t":"deu", "n":"nombre tarjeta/deuda", "cap":capital_numérico, "ea":tasa_EA_porcentaje_o_null, "k":numero_cuotas, "cm":cuota_manejo_mensual_o_0, "f":"YYYY-MM-DD", "q":cuota_fija_opcional}.
@@ -753,7 +725,6 @@ async function ask(txt, files) {
   return localParse(txt);
 }
 
-// Botón principal Procesar / Actualizar Todo
 $('#go').onclick = async () => {
   const t = $('#q').value.trim(), fs = $('#fi').files;
   if (!t && !fs.length) {
@@ -774,7 +745,7 @@ $('#go').onclick = async () => {
       render();
       $('#msg').textContent = '';
     } else {
-      $('#msg').textContent = '⚠️ No se identificaron cambios. Especifica concepto y monto (ej. "Añadir gasto Agua $75.309").';
+      $('#msg').textContent = '⚠️ No se identificaron cambios. Especifica concepto y monto.';
     }
   } catch (e) {
     notify('Error al procesar: ' + (e.message || e), 'warn');
@@ -783,9 +754,7 @@ $('#go').onclick = async () => {
   $('#go').disabled = false;
 };
 
-// LECTURA DIRECTA DEL ARCHIVO .XLSX CON SHEETJS
 function parseSheetFromWorkbook(wb, sheetName, usarEstimados) {
-  // 1. Leer Saldos desde la hoja 'Actual' si existe
   if (wb.SheetNames.includes('Actual')) {
     const rowsAct = XLSX.utils.sheet_to_json(wb.Sheets['Actual'], {header:1, defval:null});
     const newSal = {};
@@ -803,7 +772,6 @@ function parseSheetFromWorkbook(wb, sheetName, usarEstimados) {
     if (Object.keys(newSal).length) S.sal = newSal;
   }
 
-  // 2. Extraer promedios de 'Presupuesto Prom' para rellenar vacíos si se solicita
   const mapProm = {};
   if (wb.SheetNames.includes('Presupuesto Prom')) {
     const rowsP = XLSX.utils.sheet_to_json(wb.Sheets['Presupuesto Prom'], {header:1, defval:null});
@@ -814,7 +782,6 @@ function parseSheetFromWorkbook(wb, sheetName, usarEstimados) {
     });
   }
 
-  // 3. Leer hoja mensual seleccionada
   const targetSheet = wb.SheetNames.includes(sheetName) ? sheetName : wb.SheetNames[0];
   const rows = XLSX.utils.sheet_to_json(wb.Sheets[targetSheet], {header:1, raw:false, dateNF:'yyyy-mm-dd', defval:null});
   let mode = null;
@@ -864,7 +831,6 @@ function parseSheetFromWorkbook(wb, sheetName, usarEstimados) {
     S.gas = newGas;
   }
 
-  // 4. Leer 'Simulador y Proyecciones' si existe
   if (wb.SheetNames.includes('Simulador y Proyecciones')) {
     const rowsSim = XLSX.utils.sheet_to_json(wb.Sheets['Simulador y Proyecciones'], {header:1, defval:null});
     const simItems = [];
@@ -890,7 +856,7 @@ $('#xlsxIn').onchange = e => {
       uploadedWorkbook = XLSX.read(data, {type: 'array', cellDates: true});
       const sheetElegida = $('#selMes').value;
       parseSheetFromWorkbook(uploadedWorkbook, sheetElegida, $('#chkEstimados').checked);
-      save(`✓ Archivo Excel "${file.name}" leído directamente (${uploadedWorkbook.SheetNames.length} hojas detectadas).`);
+      save(`✓ Archivo Excel "${file.name}" leído directamente.`);
       render();
     } catch (err) {
       notify('Error al leer el archivo Excel: ' + err.message, 'warn');
@@ -899,50 +865,42 @@ $('#xlsxIn').onchange = e => {
   reader.readAsArrayBuffer(file);
 };
 
-// EXPORTAR DE VUELTA A EXCEL (.XLSX)
 $('#xlsxOut').onclick = () => {
   try {
     const wb = XLSX.utils.book_new();
-    // 1. Hoja Saldos Actuales
     const salRows = [['Cuenta / Plataforma', 'Saldo Actual (COP)']];
     Object.entries(S.sal).forEach(([k,v]) => salRows.push([k, Number(v||0)]));
     salRows.push(['TOTAL PATRIMONIO LÍQUIDO', Object.values(S.sal).reduce((a,b)=>a+(+b||0),0)]);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(salRows), 'Actual');
 
-    // 2. Hoja Ingresos
     const ingRows = [['Descripción del Ingreso', 'Monto (COP)', 'Fecha', 'Estado', 'Recurrente']];
     S.ing.forEach(x => ingRows.push([x.d, Number(x.m||0), x.f, x.p ? 'Recibido' : 'Por recibir', x.r ? 'Sí' : 'No']));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ingRows), 'Ingresos_Mes');
 
-    // 3. Hoja Gastos y Compromisos
     const gasRows = [['Concepto / Gasto Fijo', 'Monto (COP)', 'Fecha Límite / Pago', 'Estado', 'Recurrente']];
     S.gas.forEach(x => gasRows.push([x.d, Number(x.m||0), x.f, x.p ? 'Pagado' : 'Pendiente', x.r ? 'Sí' : 'No']));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(gasRows), 'Gastos_Mes');
 
-    // 4. Hoja Deudas y Tarjetas
     const deuRows = [['Nombre de la Deuda', 'Capital (COP)', 'Tasa EA (%)', 'Cuotas Totales', 'Cuotas Pagadas', 'Cuota Manejo (COP)', 'Cuota Estimada (COP)', 'Saldo Estimado (COP)']];
     S.deu.forEach(d => deuRows.push([d.n, d.cap||0, d.ea||0, d.k||1, d.pg||0, d.cm||0, Math.round(cuota(d)), Math.round(saldo(d)||0)]));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(deuRows), 'Control_Deudas');
 
-    // 5. Hoja Simulador y Metas
     const simRows = [['Ítem / Meta Simulada', 'Valor Total (COP)', 'Cuotas / Meses', 'Tasa EA (%)', 'Cuota Manejo (COP)', 'Impacto Mensual (COP)', 'Mes Inicio', 'Activa en Proyección']];
     (S.sim||[]).forEach(sm => simRows.push([sm.n, sm.cap||0, sm.k||1, sm.ea||0, sm.cm||0, Math.round(simCuota(sm)), sm.mes||TODAY.slice(0,7), sm.act ? 'Sí' : 'No']));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(simRows), 'Simulador_Metas');
 
-    // 6. Hoja Proyección 6 Meses
     const pr = proy();
     const pryRows = [['Mes', 'Ingresos Proyectados (COP)', 'Salidas Base + Deudas (COP)', 'Simulador Activo (COP)', 'Flujo Neto (COP)', 'Saldo Acumulado (COP)']];
     pr.forEach(r => pryRows.push([r.mk, Math.round(r.i), Math.round(r.g - r.simGasto), Math.round(r.simGasto), Math.round(r.n), Math.round(r.s)]));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pryRows), 'Proyeccion_6_Meses');
 
     XLSX.writeFile(wb, `Asistente_Contable_Actualizado_${TODAY}.xlsx`);
-    notify('✓ Archivo Excel (.xlsx) generado y descargado con todas tus hojas actualizadas.');
+    notify('✓ Archivo Excel (.xlsx) generado y descargado.');
   } catch (err) {
     notify('Error al exportar Excel: ' + err.message, 'warn');
   }
 };
 
-// Eventos de botones e inputs
 document.addEventListener('click', e => {
   const b = e.target.closest('button[data-a]');
   if (!b) return;
@@ -981,7 +939,6 @@ document.addEventListener('change', e => {
   render();
 });
 
-// Botones de control y adición manual
 $('#btnRecalc').onclick = () => { save('✓ Todos los cambios han sido guardados y recalculados.'); render(); };
 $('#verPagadosBtn').onclick = () => { showPagados = !showPagados; $('#pagadosBox').style.display = showPagados ? 'block' : 'none'; };
 $('#addGasBtn').onclick = () => { S.gas.push({d:'Nuevo gasto', m:0, f:TODAY, p:0, r:1}); save('✓ Fila de gasto añadida.'); render(); };
@@ -989,7 +946,7 @@ $('#addIngBtn').onclick = () => { S.ing.push({d:'Nuevo ingreso', m:0, f:TODAY, p
 $('#addDeuBtn').onclick = () => { S.deu.push({n:'Nueva tarjeta / deuda', cap:0, ea:28, k:1, pg:0, cm:0, f:TODAY}); save('✓ Nueva deuda añadida.'); render(); };
 $('#addSimBtn').onclick = () => { S.sim.push({n:'Nueva compra / meta', cap:200000, k:1, ea:0, cm:0, metodo:'Ahorro', mes:TODAY.slice(0,7), act:1}); save('✓ Nueva simulación añadida.'); render(); };
 $('#addCuentaBtn').onclick = () => {
-  const nombre = prompt('Nombre de la nueva cuenta o bolsillo (ej. Bolsillo Viaje, Lulo Bank, Fiducuenta):');
+  const nombre = prompt('Nombre de la nueva cuenta o bolsillo:');
   if (nombre && nombre.trim()) { S.sal[nombre.trim()] = 0; save('✓ Cuenta añadida.'); render(); }
 };
 
@@ -1004,7 +961,7 @@ function reloadFromSelectedSheet() {
     S = buildInitialState(shName, est, keepCripto);
     S.sim = prevSim;
   }
-  save(`✓ Mostrando hoja "${shName}" (${est ? 'con estimados recurrentes' : 'valores exactos de la hoja'}).`);
+  save(`✓ Mostrando hoja "${shName}".`);
   render();
 }
 
@@ -1013,24 +970,29 @@ $('#chkEstimados').onchange = reloadFromSelectedSheet;
 $('#btnRestaurarBase').onclick = () => {
   uploadedWorkbook = null;
   S = buildInitialState($('#selMes').value, $('#chkEstimados').checked, true);
-  save('✓ Datos restaurados desde tu plantilla original de Excel.');
+  save('✓ Datos restaurados desde la plantilla original de Excel.');
   render();
 };
 
 $('#togCripto').onclick = () => {
   if ('Lemon' in S.sal) { delete S.sal.Lemon; delete S.sal.Binance; delete S.sal.ARQ; }
   else { Object.assign(S.sal, {Lemon:100493, Binance:125196, ARQ:95255}); }
-  save('✓ Cuentas Cripto/USD alternadas en el saldo total.');
+  save('✓ Cuentas Cripto/USD alternadas.');
   render();
 };
 
-// Configuración Gemini API Key
 function updateApiBadge() {
+  const savedModel = localStorage.getItem('gemini_model');
+  if (!savedModel || savedModel.startsWith('gemini-2.5')) {
+    localStorage.setItem('gemini_model', DEFAULT_GEMINI_MODEL);
+  }
+  $('#geminiModel').value = localStorage.getItem('gemini_model') || DEFAULT_GEMINI_MODEL;
+
   const key = localStorage.getItem('gemini_api_key');
   const badge = $('#apiBadge');
   if (key) {
     badge.className = 'tag o';
-    badge.textContent = '✓ Gemini AI Conectado';
+    badge.textContent = '✓ Gemini AI Conectado (' + $('#geminiModel').value + ')';
     $('#apiKeyInput').value = key;
   } else {
     badge.className = 'tag h';
@@ -1038,25 +1000,32 @@ function updateApiBadge() {
     $('#apiKeyInput').value = '';
   }
 }
+
 $('#btnSaveKey').onclick = () => {
   const k = $('#apiKeyInput').value.trim();
   if (!k) return notify('Ingresa una API Key válida de Google AI Studio.', 'warn');
   localStorage.setItem('gemini_api_key', k);
   localStorage.setItem('gemini_model', $('#geminiModel').value);
   updateApiBadge();
-  notify('✓ Gemini API Key guardada en este navegador. Ya puedes procesar texto libre y extractos en PDF/Imagen.');
+  notify('✓ Gemini API Key y modelo (' + $('#geminiModel').value + ') guardados.');
 };
+
+$('#geminiModel').onchange = () => {
+  localStorage.setItem('gemini_model', $('#geminiModel').value);
+  updateApiBadge();
+};
+
 $('#btnClearKey').onclick = () => {
   localStorage.removeItem('gemini_api_key');
   updateApiBadge();
   notify('API Key eliminada. Usando motor local.', 'warn');
 };
+
 $('#fi').onchange = e => {
   const n = e.target.files.length;
   $('#fileCount').textContent = n ? `${n} archivo(s) adjunto(s)` : '';
 };
 
-// Exportar e importar JSON
 $('#ex').onclick = () => {
   const blob = new Blob([JSON.stringify(S, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
@@ -1064,6 +1033,7 @@ $('#ex').onclick = () => {
   a.download = 'finanzas-' + TODAY + '.json';
   a.click();
 };
+
 $('#imp').onchange = e => {
   const file = e.target.files[0];
   if (!file) return;
