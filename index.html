@@ -113,13 +113,12 @@ details.cfg summary{cursor:pointer;font-weight:600;font-size:14px;outline:none}
   <details class="cfg" id="geminiCfg">
     <summary>✨ Conexión con Google Gemini API (Para cualquier navegador y lectura de extractos PDF/Imagen) <span id="apiBadge" class="tag h" style="margin-left:6px">Modo Local Activo</span></summary>
     <div style="margin-top:10px;font-size:13.5px">
-      <p style="margin:0 0 8px">Pega tu API Key de <b>Google AI Studio</b> (<code>AIza...</code>) para que <b>Gemini 3.8 Flash</b> interprete instrucciones complejas y lea fotos o PDFs de tus extractos bancarios desde cualquier navegador. Se guarda únicamente en este navegador.</p>
+      <p style="margin:0 0 8px">Pega tu API Key de <b>Google AI Studio</b> (<code>AIza...</code>) para que <b>Gemini 1.5 Flash</b> interprete instrucciones complejas y lea fotos o PDFs de tus extractos bancarios desde cualquier navegador. Se guarda únicamente en este navegador.</p>
       <div class="tools">
         <input type="password" id="apiKeyInput" placeholder="AIzaSy..." style="flex:1;min-width:220px">
         <select id="geminiModel" style="width:auto">
-          <option value="gemini-3.8-flash">gemini-3.8-flash (Recomendado)</option>
-          <option value="gemini-3.8-pro">gemini-3.8-pro (Avanzado)</option>
-          <option value="gemini-2.5-flash">gemini-2.5-flash (Legacy)</option>
+          <option value="gemini-1.5-flash">gemini-1.5-flash (Recomendado)</option>
+          <option value="gemini-1.5-pro">gemini-1.5-pro (Avanzado)</option>
         </select>
         <button class="p s" id="btnSaveKey">Guardar API Key</button>
         <button class="s" id="btnClearKey">Borrar Key</button>
@@ -229,7 +228,7 @@ const dd=s=>Math.round((P(s)-P(TODAY))/864e5),MES=s=>P(s+'-01').toLocaleDateStri
 const fm=n=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Math.round(n||0));
 
 const STORAGE_KEY = 'fin_asistente_v2';
-const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+const DEFAULT_GEMINI_MODEL = 'gemini-1.5-flash';
 let showPagados = false;
 let uploadedWorkbook = null;
 
@@ -983,7 +982,7 @@ $('#togCripto').onclick = () => {
 
 function updateApiBadge() {
   const savedModel = localStorage.getItem('gemini_model');
-  if (!savedModel || savedModel.startsWith('gemini-2.5')) {
+  if (!savedModel || savedModel.startsWith('gemini-2.5') || savedModel.startsWith('gemini-3.8')) {
     localStorage.setItem('gemini_model', DEFAULT_GEMINI_MODEL);
   }
   $('#geminiModel').value = localStorage.getItem('gemini_model') || DEFAULT_GEMINI_MODEL;
